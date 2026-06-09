@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Card } from './primitives';
 import { Button } from './primitives';
 import { cx } from './cx';
+import './DropZone.css';
 
 interface DropZoneProps {
   onFile: (file: File) => void;
