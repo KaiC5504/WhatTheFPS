@@ -1,5 +1,6 @@
 import { Button } from './primitives';
 import { cx } from './cx';
+import './TopBar.css';
 
 interface TopBarProps {
   mode: 'easy' | 'nerd';

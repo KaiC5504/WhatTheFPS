@@ -1,0 +1,36 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar__tagline {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+@media (max-width: 560px) {
+  .topbar__tagline {
+    display: none;
+  }
+}
+
+.topbar__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  margin-left: auto;
+  background: var(--surface);
+  padding: var(--s1);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+}
+
+/* tighten the toggle buttons inside the pill container */
+.topbar__toggle .btn {
+  border-radius: var(--r-pill);
+  padding: var(--s2) var(--s4);
+  font-size: 13px;
+}
