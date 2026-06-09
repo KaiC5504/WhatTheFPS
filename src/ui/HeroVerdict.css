@@ -1,39 +1,74 @@
-.hero-verdict {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--s4);
-  padding: var(--s7) var(--s5) var(--s6);
-  text-align: center;
+/* The hero is a frosted readout floating over two soft color blobs — the blur has
+   real color to refract instead of sitting on flat gray. Blobs use only sanctioned
+   hues: the blue accent plus the run's severity tint (warm = heat/warning only). */
+.hero {
+  position: relative;
+  isolation: isolate;
 }
 
-/* Severity-tinted bloom behind the mascot — ties the run's mood to the whole panel.
-   Sits below the content (which is lifted to z-index 1) but above the glass fill. */
-.hero-verdict::before {
-  content: '';
+/* Clipped to the card's own footprint so the blobs are only ever seen *through* the
+   frosted glass — never spilling out around it as a raw halo. */
+.hero__ambient {
   position: absolute;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
+  border-radius: var(--r-xl);
   pointer-events: none;
-  background: radial-gradient(62% 68% at 50% 26%, var(--bloom, transparent), transparent 72%);
-  opacity: 0.7;
 }
-.hero-verdict > * {
-  position: relative;
-  z-index: 1;
+.hero__blob {
+  position: absolute;
+  top: -30%;
+  height: 160%;
+  width: 48%;
+  border-radius: 50%;
+  filter: blur(64px);
+}
+.hero__blob--cool {
+  left: -6%;
+  background: var(--accent);
+  opacity: 0.22;
+}
+.hero__blob--signal {
+  right: -4%;
+  background: var(--signal, var(--accent));
+  opacity: 0.18;
+}
+.hero--good {
+  --signal: var(--good);
+}
+.hero--warn {
+  --signal: var(--warn);
+}
+.hero--bad {
+  --signal: var(--bad);
 }
 
-.hero-verdict--good {
-  --bloom: var(--good-dim);
+/* Horizontal hero: mascot left, chip + verdict right. Tight vertical padding so the
+   card carries its content instead of air. */
+.hero-verdict {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--s5);
+  padding: var(--s5) var(--s6);
+  text-align: left;
 }
-.hero-verdict--warn {
-  --bloom: var(--warn-dim);
+.hero-verdict > svg {
+  flex-shrink: 0;
 }
-.hero-verdict--bad {
-  --bloom: var(--bad-dim);
+
+.hero-verdict__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
 }
 
 .hero-verdict__pill {
+  align-self: flex-start;
   padding: var(--s1) var(--s3);
   border-radius: var(--r-pill);
   border: 1px solid transparent;
@@ -54,19 +89,41 @@
   border-color: var(--bad);
 }
 
+/* Plain UI sans, near-white — not the display face, not a warm color. */
 .hero-verdict__headline {
-  font-family: var(--font-display);
-  font-size: clamp(22px, 2.6vw, 30px);
-  line-height: 1.12;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: clamp(20px, 2.4vw, 27px);
+  line-height: 1.22;
+  letter-spacing: 0;
+  color: var(--text);
   margin: 0;
-  max-width: 18ch;
+  max-width: 42ch;
+  text-wrap: balance;
 }
-.hero-verdict--good .hero-verdict__headline {
+
+.hero-verdict__metric {
+  font-weight: 600;
+}
+.hero-verdict--good .hero-verdict__metric {
   color: var(--good);
 }
-.hero-verdict--warn .hero-verdict__headline {
+.hero-verdict--warn .hero-verdict__metric {
   color: var(--warn);
 }
-.hero-verdict--bad .hero-verdict__headline {
+.hero-verdict--bad .hero-verdict__metric {
   color: var(--bad);
+}
+
+@media (max-width: 560px) {
+  .hero-verdict {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--s4);
+    padding: var(--s5);
+  }
+  .hero-verdict__pill {
+    align-self: center;
+  }
 }

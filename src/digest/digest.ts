@@ -56,17 +56,21 @@ function fpsLine(log: NormalizedLog): string {
 }
 
 function specsBlock(specs: InferredSpecs): string {
-  const ram = specs.ramMb !== null ? `${Math.round(specs.ramMb / 1024)} GB` : 'unknown';
+  const kit = specs.ramModelGuess
+    ? ` (${specs.ramModelGuess}${specs.ramModules ? ` ×${specs.ramModules}` : ''})`
+    : '';
+  const ram = specs.ramMb !== null ? `${Math.round(specs.ramMb / 1024)} GB${kit}` : 'unknown';
   const cpu = specs.cpuModelGuess ?? specs.cpuVendor;
   const gpu = specs.gpuModelGuess ?? specs.gpuVendor;
   const form = specs.isLaptop ? 'laptop' : 'desktop';
-  return [
-    'System (inferred, edit if wrong):',
-    `- CPU: ${cpu}`,
-    `- GPU: ${gpu}`,
-    `- RAM: ${ram}`,
-    `- Form factor: ${form}`,
-  ].join('\n');
+  const lines = ['System (inferred, edit if wrong):'];
+  if (specs.systemModel) lines.push(`- Machine: ${specs.systemModel}`);
+  lines.push(`- CPU: ${cpu}`);
+  lines.push(`- GPU: ${gpu}`);
+  if (specs.igpuPresent && specs.igpuModelGuess) lines.push(`- iGPU: ${specs.igpuModelGuess}`);
+  lines.push(`- RAM: ${ram}`);
+  lines.push(`- Form factor: ${form}`);
+  return lines.join('\n');
 }
 
 function eventsBlock(events: DiagEvent[]): string {

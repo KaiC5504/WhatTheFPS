@@ -11,8 +11,11 @@
   gap: var(--s2);
 }
 
-.specs-card__field input[type='text'],
-.specs-card__field input[type='number'] {
+.specs-card__field--wide {
+  grid-column: 1 / -1;
+}
+
+.specs-card__field input[type='text'] {
   background: var(--inset);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
@@ -24,20 +27,14 @@
   transition: border-color var(--dur-fast) var(--ease);
 }
 
-.specs-card__field input[type='text']:focus,
-.specs-card__field input[type='number']:focus {
+.specs-card__field input[type='text']:focus {
   border-color: var(--accent);
 }
 
+/* sits in its own grid cell; drop it to the row's baseline next to the inputs */
 .specs-card__field--laptop {
   flex-direction: row;
   align-items: center;
-  gap: var(--s2);
-}
-
-.specs-card__field--laptop input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--accent);
-  cursor: pointer;
+  align-self: end;
+  min-height: 38px;
 }

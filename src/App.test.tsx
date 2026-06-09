@@ -37,4 +37,17 @@ describe('App assembly', () => {
     await user.click(screen.getByRole('tab', { name: 'Easy' }));
     expect(screen.queryByText('Per-sensor statistics')).toBeNull();
   });
+
+  it('opens the specs settings overlay from the top bar and closes it with Done', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(screen.queryByRole('dialog', { name: /system specs/i })).toBeNull();
+    await user.click(screen.getByRole('button', { name: /specs/i }));
+    const dialog = screen.getByRole('dialog', { name: /system specs/i });
+    expect(dialog).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /done/i }));
+    expect(screen.queryByRole('dialog', { name: /system specs/i })).toBeNull();
+  });
 });

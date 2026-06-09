@@ -3,13 +3,17 @@ import { loadSpecs, saveSpecs } from './specsStore';
 import type { InferredSpecs } from '../types';
 
 const sample: InferredSpecs = {
+  systemModel: 'ASUS ROG Strix G614JI',
   cpuVendor: 'intel',
   cpuModelGuess: 'Intel Core i9-13900K',
   gpuVendor: 'nvidia',
   gpuModelGuess: 'NVIDIA RTX 4090',
+  igpuModelGuess: null,
   igpuPresent: false,
   isLaptop: false,
   ramMb: 32768,
+  ramModelGuess: 'Kingston KF556S40-16',
+  ramModules: 2,
 };
 
 describe('specsStore', () => {

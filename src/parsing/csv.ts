@@ -50,6 +50,16 @@ function dropTrailingEmpty(cells: string[]): string[] {
   return cells;
 }
 
+// HWiNFO's trailer repeats the header then writes a per-column "source" row naming each
+// owning device ('CPU [#0]: ...', 'dGPU [#1]: ...', 'System: ...'). Identify it by counting
+// those markers — robust to where it sits and to Average/Minimum/Maximum summary rows.
+const SOURCE_MARKER = /\[#\d+\]:|^System:/;
+function sourceScore(cells: string[]): number {
+  let n = 0;
+  for (const c of cells) if (SOURCE_MARKER.test(c)) n++;
+  return n;
+}
+
 export function parseCsv(text: string): ParsedCsv {
   const lines = text.split(/\r?\n/);
   let headerLine = '';
@@ -68,13 +78,23 @@ export function parseCsv(text: string): ParsedCsv {
   const headers = dropTrailingEmpty(tokenize(headerLine, delimiter));
 
   const rows: string[][] = [];
+  let sources: string[] = [];
+  let bestScore = 0;
   for (let i = headerIdx + 1; i < lines.length; i++) {
     const line = lines[i];
     if (line.trim() === '') continue;
     const cells = dropTrailingEmpty(tokenize(line, delimiter));
-    if (!DATE_RE.test(cells[0])) continue; // footer/summary rows (Average/Minimum/...) skipped
-    rows.push(cells);
+    if (DATE_RE.test(cells[0])) {
+      rows.push(cells);
+      continue;
+    }
+    // Non-data line: footer/summary, repeated header, or the source row.
+    const score = sourceScore(cells);
+    if (score > bestScore) {
+      bestScore = score;
+      sources = cells;
+    }
   }
 
-  return { headers, rows, delimiter, decimal };
+  return { headers, rows, sources, delimiter, decimal };
 }

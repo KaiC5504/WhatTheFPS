@@ -80,4 +80,24 @@ describe('normalize', () => {
     expect(log.specs.gpuVendor).toBe('nvidia');
     expect(log.specs.isLaptop).toBe(true);
   });
+
+  it('computes installed RAM as the max of Used + Available across rows', () => {
+    const text =
+      'Date,Time,"Physical Memory Used [MB]","Physical Memory Available [MB]"\n' +
+      '9.6.2026,12:00:00.000,19440,12944\n' +  // 32384
+      '9.6.2026,12:00:02.000,20000,12300\n';   // 32300 -> max stays 32384
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.specs.ramMb).toBe(32384);
+    expect(Math.round(log.specs.ramMb! / 1024)).toBe(32);
+  });
+
+  it('falls back to Used / Load% when Available is absent', () => {
+    const text =
+      'Date,Time,"Physical Memory Used [MB]","Physical Memory Load [%]"\n' +
+      '9.6.2026,12:00:00.000,19440,60.0\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(Math.round(log.specs.ramMb! / 1024)).toBe(32); // 19440/60*100 = 32400
+  });
 });

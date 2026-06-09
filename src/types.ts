@@ -4,6 +4,7 @@ export type Decimal = '.' | ',';
 export interface ParsedCsv {
   headers: string[];        // raw header cells, order preserved, includes duplicates
   rows: string[][];         // data rows only (footers stripped), cells as raw strings
+  sources: string[];        // per-column device source from HWiNFO's trailer row, aligned to headers; [] if absent
   delimiter: Delimiter;
   decimal: Decimal;
 }
@@ -14,6 +15,7 @@ export interface ColumnMeta {
   unit: string | null;      // '°C' | 'MHz' | '%' | 'W' | 'V' | 'FPS' | 'Yes/No' | ... | null
   index: number;            // position in headers
   dupIndex: number;         // 0 for first occurrence of `name`, 1 for second, ...
+  source: string | null;    // owning device, e.g. 'dGPU [#1]: NVIDIA GeForce RTX 4070 Laptop'
 }
 
 export type CanonicalKey =
@@ -41,13 +43,17 @@ export type CpuVendor = 'intel' | 'amd' | 'unknown';
 export type GpuVendor = 'nvidia' | 'amd' | 'intel' | 'unknown';
 
 export interface InferredSpecs {
+  systemModel: string | null;       // e.g. 'ASUS ROG Strix G614JI' from the log trailer
   cpuVendor: CpuVendor;
-  cpuModelGuess: string | null;     // e.g. 'Intel hybrid (6P+8E)' — a guess, user-editable
+  cpuModelGuess: string | null;     // real model when the trailer has it, else a topology guess
   gpuVendor: GpuVendor;
-  gpuModelGuess: string | null;
+  gpuModelGuess: string | null;     // discrete GPU preferred, e.g. 'NVIDIA GeForce RTX 4070 Laptop'
+  igpuModelGuess: string | null;    // e.g. 'Intel UHD Graphics'
   igpuPresent: boolean;
   isLaptop: boolean;
   ramMb: number | null;
+  ramModelGuess: string | null;     // DIMM kit, e.g. 'Kingston KF556S40-16'
+  ramModules: number | null;        // populated DIMM slot count
 }
 
 export interface Stats { count: number; avg: number; min: number; max: number; p5: number; p95: number; p99: number; p1Low: number; p5Low: number; }

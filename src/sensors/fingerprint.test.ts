@@ -46,4 +46,45 @@ describe('inferSpecs', () => {
     expect(s.cpuModelGuess).toBeNull();
     expect(s.ramMb).toBeNull();
   });
+
+  describe('from the HWiNFO source row', () => {
+    const sources = [
+      '', '', // Date / Time have no source
+      'System: ASUS ROG Strix G614JI_G614JI',
+      'CPU [#0]: Intel Core i7-13650HX',
+      'CPU [#0]: Intel Core i7-13650HX: DTS', // suffixed duplicate must not leak into the model
+      'dGPU [#1]: NVIDIA GeForce RTX 4070 Laptop',
+      'iGPU [#0]: Intel UHD Graphics',
+      'DDR5 DIMM [#0]: Kingston KF556S40-16 (BANK 0/Controller0-ChannelA-DIMM0)',
+      'DDR5 DIMM [#2]: Kingston KF556S40-16 (BANK 0/Controller1-ChannelA-DIMM0)',
+    ];
+    const names = ['Date', 'Time', 'System', 'CPU Package Power [W]', 'x', 'GPU Power [W]', 'GPU Core Temperature [°C]', 'r0', 'r1'];
+
+    it('extracts the real CPU model, stripping sub-source qualifiers', () => {
+      expect(inferSpecs(names, sources).cpuModelGuess).toBe('Intel Core i7-13650HX');
+    });
+    it('extracts the discrete GPU model and infers its vendor from the name', () => {
+      const s = inferSpecs(names, sources);
+      expect(s.gpuModelGuess).toBe('NVIDIA GeForce RTX 4070 Laptop');
+      expect(s.gpuVendor).toBe('nvidia');
+    });
+    it('extracts the iGPU model and the system model', () => {
+      const s = inferSpecs(names, sources);
+      expect(s.igpuModelGuess).toBe('Intel UHD Graphics');
+      expect(s.igpuPresent).toBe(true);
+      expect(s.systemModel).toBe('ASUS ROG Strix G614JI_G614JI');
+    });
+    it('extracts the RAM kit and counts populated DIMM slots', () => {
+      const s = inferSpecs(names, sources);
+      expect(s.ramModelGuess).toBe('Kingston KF556S40-16');
+      expect(s.ramModules).toBe(2);
+    });
+    it('prefers the discrete GPU over the integrated one for gpuModelGuess', () => {
+      const s = inferSpecs(['GPU Power [W]'], ['dGPU [#0]: NVIDIA GeForce RTX 5070 Laptop', 'iGPU [#1]: AMD Radeon 610M']);
+      expect(s.gpuModelGuess).toBe('NVIDIA GeForce RTX 5070 Laptop');
+    });
+    it('falls back to the topology guess when the trailer lacks a CPU model', () => {
+      expect(inferSpecs(['P-core 0 VID [V]', 'E-core 6 VID [V]']).cpuModelGuess).toMatch(/Intel hybrid/);
+    });
+  });
 });

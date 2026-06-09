@@ -5,15 +5,26 @@ import './TopBar.css';
 interface TopBarProps {
   mode: 'easy' | 'nerd';
   onModeChange: (m: 'easy' | 'nerd') => void;
+  onOpenSettings?: () => void;
 }
 
-export function TopBar({ mode, onModeChange }: TopBarProps) {
+export function TopBar({ mode, onModeChange, onOpenSettings }: TopBarProps) {
   return (
     <header className="topbar">
       <span className="wordmark">
         WT<span className="wordmark__f">F</span>PS
       </span>
       <p className="topbar__tagline u-dim">HWiNFO log analyzer</p>
+      {onOpenSettings && (
+        <Button
+          variant="ghost"
+          className="topbar__settings"
+          aria-label="Edit system specs"
+          onClick={onOpenSettings}
+        >
+          ⚙ Specs
+        </Button>
+      )}
       <nav className="topbar__toggle" role="tablist" aria-label="View mode">
         <Button
           role="tab"

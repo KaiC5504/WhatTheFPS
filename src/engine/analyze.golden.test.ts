@@ -30,6 +30,15 @@ describe('analyze (golden, real logs)', () => {
     expect(r.log.specs.gpuVendor).toBe('nvidia');
     expect(r.log.specs.isLaptop).toBe(true);
 
+    // Real models recovered from the HWiNFO trailer (the bug this fixes).
+    expect(r.log.specs.cpuModelGuess).toBe('Intel Core i7-13650HX');
+    expect(r.log.specs.gpuModelGuess).toBe('NVIDIA GeForce RTX 4070 Laptop');
+    expect(r.log.specs.igpuModelGuess).toBe('Intel UHD Graphics');
+    expect(r.log.specs.systemModel).toContain('ASUS');
+    expect(r.log.specs.ramModelGuess).toBe('Kingston KF556S40-16');
+    expect(r.log.specs.ramModules).toBe(2);
+    expect(Math.round((r.log.specs.ramMb ?? 0) / 1024)).toBe(32);
+
     expect(r.log.fps.source).toBe('displayed');
     const fpsAvg = r.log.fps.stats?.avg ?? NaN;
     expect(fpsAvg).toBeGreaterThan(60);
@@ -49,6 +58,11 @@ describe('analyze (golden, real logs)', () => {
     const r = analyze(sample('AMD + Nvidia/A16_superposition_1080extreme_2460MHz.CSV'));
 
     expect(r.log.specs.cpuVendor).toBe('amd');
+    expect(r.log.specs.cpuModelGuess).toBe('AMD Ryzen 9 8940HX');
+    expect(r.log.specs.gpuModelGuess).toBe('NVIDIA GeForce RTX 5070 Laptop');
+    expect(r.log.specs.systemModel).toContain('ASUS');
+    expect(r.log.specs.ramModules).toBe(2);
+    expect((r.log.specs.ramMb ?? 0)).toBeGreaterThan(8 * 1024);
 
     const gpuTempMax = r.stats['gpu.temp']?.max ?? NaN;
     expect(Number.isFinite(gpuTempMax)).toBe(true);

@@ -51,4 +51,15 @@ describe('TopBar', () => {
     await user.click(scope.getByRole('tab', { name: /easy/i }));
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it('shows a specs settings button only when onOpenSettings is provided, and fires it', async () => {
+    const user = userEvent.setup();
+    const { container, rerender } = render(<TopBar mode="easy" onModeChange={vi.fn()} />);
+    expect(within(container as HTMLElement).queryByRole('button', { name: /specs/i })).toBeNull();
+
+    const onOpen = vi.fn();
+    rerender(<TopBar mode="easy" onModeChange={vi.fn()} onOpenSettings={onOpen} />);
+    await user.click(within(container as HTMLElement).getByRole('button', { name: /specs/i }));
+    expect(onOpen).toHaveBeenCalledOnce();
+  });
 });

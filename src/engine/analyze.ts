@@ -19,7 +19,7 @@ export interface AnalyzeOptions {
 // The single seam where the ingest pipeline and the analysis stack meet.
 export function analyze(bytes: Uint8Array, opts: AnalyzeOptions = {}): AnalysisResult {
   const parsed = parseCsv(decodeBytes(bytes));
-  const columns = buildColumns(parsed.headers);
+  const columns = buildColumns(parsed.headers, parsed.sources);
 
   const log = normalize(columns, parsed.rows, parsed.decimal);
   // normalize() leaves fps as a none-placeholder; the FPS pipeline is wired here.

@@ -10,7 +10,7 @@ import { SpecsCard } from './ui/SpecsCard';
 import { NerdView } from './ui/NerdView';
 import { Mascot } from './ui/Mascot';
 import { useAnalysis, type AnalysisStatus } from './ui/useAnalysis';
-import { loadSpecs } from './storage/specsStore';
+import { loadSpecs, saveSpecs, EMPTY_SPECS } from './storage/specsStore';
 import { Button } from './ui/primitives';
 import './ui/App.css';
 
@@ -20,16 +20,34 @@ export function App() {
   const { status, result, error, analyzeFile, reset } = useAnalysis();
   const [mode, setMode] = useState<UiMode>('easy');
   const [specs, setSpecs] = useState<InferredSpecs | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // On a fresh result, seed the editable specs from a saved override if present,
-  // otherwise from what the engine inferred.
+  // On a fresh result, prefer the engine's detection. Reuse saved overrides only when they
+  // belong to the same machine (same CPU + GPU), so one rig's log can't shadow another's.
   useEffect(() => {
-    if (result) setSpecs(loadSpecs() ?? result.log.specs);
+    if (!result) return;
+    const fresh = result.log.specs;
+    const saved = loadSpecs();
+    const sameMachine =
+      !!saved &&
+      saved.cpuModelGuess === fresh.cpuModelGuess &&
+      saved.gpuModelGuess === fresh.gpuModelGuess;
+    if (sameMachine) {
+      setSpecs(saved);
+    } else {
+      setSpecs(fresh);
+      saveSpecs(fresh);
+    }
   }, [result]);
+
+  function openSettings() {
+    setSpecs((cur) => cur ?? loadSpecs() ?? EMPTY_SPECS);
+    setSettingsOpen(true);
+  }
 
   return (
     <div className="app">
-      <TopBar mode={mode} onModeChange={setMode} />
+      <TopBar mode={mode} onModeChange={setMode} onOpenSettings={openSettings} />
       <main className="app__main">
         {status === 'ready' && result ? (
           <Results
@@ -43,6 +61,17 @@ export function App() {
           <Landing status={status} error={error} onFile={analyzeFile} />
         )}
       </main>
+      {settingsOpen && (
+        <div className="settings-overlay" role="dialog" aria-modal="true" aria-label="System specs">
+          <div className="settings-overlay__backdrop" onClick={() => setSettingsOpen(false)} />
+          <div className="settings-overlay__panel">
+            <SpecsCard specs={specs ?? EMPTY_SPECS} onChange={setSpecs} />
+            <div className="settings-overlay__actions">
+              <Button variant="accent" onClick={() => setSettingsOpen(false)}>Done</Button>
+            </div>
+          </div>
+        </div>
+      )}
       <footer className="app__footer u-dim">
         Runs entirely in your browser — your log never leaves your machine.
       </footer>
@@ -98,10 +127,8 @@ function Results({
 }) {
   return (
     <div className="results stack">
-      <section className="results__hero">
-        <HeroVerdict verdict={result.verdict} />
-        <HeroStats hero={result.verdict.hero} />
-      </section>
+      <HeroVerdict verdict={result.verdict} />
+      <HeroStats hero={result.verdict.hero} />
 
       <FindingsList findings={result.verdict.findings} />
 

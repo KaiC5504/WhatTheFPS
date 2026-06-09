@@ -25,4 +25,16 @@ describe('buildColumns', () => {
     expect(cols[1].dupIndex).toBe(0);
     expect(cols[2].dupIndex).toBe(1);
   });
+  it('attaches the per-column source by index, null when absent or blank', () => {
+    const cols = buildColumns(
+      ['Date', 'CPU Package Power [W]', 'GPU Temperature [°C]'],
+      ['', 'CPU [#0]: Intel Core i7-13650HX', 'dGPU [#1]: NVIDIA GeForce RTX 4070 Laptop'],
+    );
+    expect(cols[0].source).toBeNull();
+    expect(cols[1].source).toBe('CPU [#0]: Intel Core i7-13650HX');
+    expect(cols[2].source).toBe('dGPU [#1]: NVIDIA GeForce RTX 4070 Laptop');
+  });
+  it('defaults source to null when no sources array is passed', () => {
+    expect(buildColumns(['CPU Package Power [W]'])[0].source).toBeNull();
+  });
 });

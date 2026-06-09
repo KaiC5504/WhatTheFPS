@@ -1,0 +1,173 @@
+/* Themed form controls — same dark instrument surface and single blue accent as the
+   rest of the app, replacing the OS-default number spinner, checkbox and dropdown. */
+
+.ctl-num,
+.ctl-select {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+.ctl-num__input,
+.ctl-select__el {
+  width: 100%;
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s2) var(--s3);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.4;
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.ctl-num__input:focus,
+.ctl-select__el:focus {
+  border-color: var(--accent);
+}
+
+/* ---- number field + custom stepper ----------------------------------- */
+
+.ctl-num__input {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  padding-right: 32px;
+}
+.ctl-num__input::-webkit-outer-spin-button,
+.ctl-num__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.ctl-num__input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.ctl-num__spin {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  width: 26px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  overflow: hidden;
+}
+.ctl-num__btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+.ctl-num__btn:first-child {
+  border-bottom: 1px solid var(--border);
+}
+.ctl-num__btn:hover {
+  background: var(--surface-3);
+  color: var(--accent);
+}
+.ctl-num__btn:active {
+  background: var(--accent-dim);
+  color: var(--accent-bright);
+}
+/* the input owns focus, but echo it onto the stepper so the control reads as one piece */
+.ctl-num__input:focus ~ .ctl-num__spin {
+  border-left-color: var(--accent-line);
+}
+
+/* ---- checkbox -------------------------------------------------------- */
+
+.ctl-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  cursor: pointer;
+  user-select: none;
+}
+.ctl-check__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  margin: 0;
+}
+.ctl-check__box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--inset);
+  color: var(--on-accent);
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+.ctl-check__box svg {
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+.ctl-check:hover .ctl-check__box {
+  border-color: var(--accent-line);
+}
+.ctl-check__input:checked + .ctl-check__box {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.ctl-check__input:checked + .ctl-check__box svg {
+  opacity: 1;
+  transform: scale(1);
+}
+.ctl-check__input:focus-visible + .ctl-check__box {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.ctl-check__label {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- select ---------------------------------------------------------- */
+
+.ctl-select__el {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 34px;
+  cursor: pointer;
+}
+.ctl-select__el option {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.ctl-select__chevron {
+  position: absolute;
+  right: var(--s3);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--text-dim);
+  pointer-events: none;
+  transition: color var(--dur-fast) var(--ease);
+}
+.ctl-select__el:focus ~ .ctl-select__chevron {
+  color: var(--accent);
+}

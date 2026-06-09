@@ -36,4 +36,16 @@ describe('parseCsv', () => {
     expect(r.rows).toHaveLength(2);
     expect(r.rows[1][2]).toBe('60');
   });
+  it('captures the HWiNFO source row aligned to headers, without leaking it into rows', () => {
+    const r = parseCsv(load('./__fixtures__/mini-footer.csv'));
+    expect(r.rows).toHaveLength(2); // Average + repeated header + source row all excluded
+    expect(r.sources).toHaveLength(r.headers.length);
+    expect(r.sources[2]).toBe('System: Test PC');
+    expect(r.sources[3]).toBe('CPU [#0]: Intel Core i7-13650HX');
+    expect(r.sources[4]).toBe('dGPU [#1]: NVIDIA GeForce RTX 4070 Laptop');
+  });
+  it('returns empty sources when there is no trailer', () => {
+    const r = parseCsv('Date,Time,X [%]\n9.6.2026,12:00:00.000,50\n');
+    expect(r.sources).toEqual([]);
+  });
 });

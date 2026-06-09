@@ -52,6 +52,38 @@ function nearestAnchorDistance(index: number, anchors: number[]): number {
   return Math.min(...anchors.map((a) => Math.abs(a - index)));
 }
 
+// Installed RAM isn't in the trailer, but Used + Available sums to the physical total.
+// Take the max over rows (Available shrinks as the OS caches more). Fall back to
+// Used / Load% when an Available column isn't logged.
+function computeRamMb(columns: ColumnMeta[], rows: string[][], decimal: Decimal): number | null {
+  const col = (name: string) => columns.find((c) => c.name.toLowerCase() === name);
+  const used = col('physical memory used');
+  if (!used) return null;
+
+  const avail = col('physical memory available');
+  if (avail) {
+    let max = 0;
+    for (const r of rows) {
+      const u = parseNumeric(r[used.index] ?? '', decimal);
+      const a = parseNumeric(r[avail.index] ?? '', decimal);
+      if (u != null && a != null) max = Math.max(max, u + a);
+    }
+    if (max > 0) return Math.round(max);
+  }
+
+  const load = col('physical memory load');
+  if (load) {
+    let max = 0;
+    for (const r of rows) {
+      const u = parseNumeric(r[used.index] ?? '', decimal);
+      const p = parseNumeric(r[load.index] ?? '', decimal);
+      if (u != null && p != null && p > 0) max = Math.max(max, (u / p) * 100);
+    }
+    if (max > 0) return Math.round(max);
+  }
+  return null;
+}
+
 export function normalize(columns: ColumnMeta[], rows: string[][], decimal: Decimal): NormalizedLog {
   const dgpuAnchors = columns.filter((c) => DGPU_ANCHOR.test(c.raw)).map((c) => c.index);
   const igpuAnchors = columns.filter((c) => IGPU_ANCHOR.test(c.raw)).map((c) => c.index);
@@ -113,7 +145,10 @@ export function normalize(columns: ColumnMeta[], rows: string[][], decimal: Deci
   return {
     rowCount: rows.length,
     pollMs,
-    specs: inferSpecs(columns.map((c) => c.raw)),
+    specs: {
+      ...inferSpecs(columns.map((c) => c.raw), columns.map((c) => c.source ?? '')),
+      ramMb: computeRamMb(columns, rows, decimal),
+    },
     sensors,
     flags,
     fps: { ...NONE_FPS },

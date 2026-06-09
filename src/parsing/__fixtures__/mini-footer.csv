@@ -1,0 +1,6 @@
+Date,Time,"Virtual Memory Load [%]","CPU Package Power [W]","GPU Temperature [°C]",
+9.6.2026,12:00:00.000,50.0,42.0,74.1,
+9.6.2026,12:00:02.000,51.0,43.0,75.2,
+Average,,50.5,42.5,74.7,
+Date,Time,"Virtual Memory Load [%]","CPU Package Power [W]","GPU Temperature [°C]",
+,,System: Test PC,CPU [#0]: Intel Core i7-13650HX,dGPU [#1]: NVIDIA GeForce RTX 4070 Laptop,

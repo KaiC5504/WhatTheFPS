@@ -15,7 +15,7 @@ export function makeLog(over: {
   return {
     rowCount: over.sensors ? Object.values(over.sensors)[0]?.length ?? 0 : 0,
     pollMs: over.pollMs ?? 2000,
-    specs: { cpuVendor: 'unknown', cpuModelGuess: null, gpuVendor: 'unknown', gpuModelGuess: null, igpuPresent: false, isLaptop: false, ramMb: null },
+    specs: { systemModel: null, cpuVendor: 'unknown', cpuModelGuess: null, gpuVendor: 'unknown', gpuModelGuess: null, igpuModelGuess: null, igpuPresent: false, isLaptop: false, ramMb: null, ramModelGuess: null, ramModules: null },
     sensors, flags,
     fps: { source: 'none', sourceLabel: '', clean: [], stats: null, presentedAvg: null, displayedAvg: null, capped: false, capValue: null, ...over.fps },
     unknownColumns: [],
