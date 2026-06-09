@@ -1,9 +1,7 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { HeroStats } from './HeroStats';
 import type { HeroNumber } from '../types';
-
-afterEach(cleanup);
 
 const fiveHero: HeroNumber[] = [
   { key: 'cpu_temp', label: 'CPU Temp', value: '72°C', severity: 'warn' },

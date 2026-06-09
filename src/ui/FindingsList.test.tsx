@@ -1,9 +1,7 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { FindingsList } from './FindingsList';
 import type { Finding } from '../types';
-
-afterEach(cleanup);
 
 describe('FindingsList', () => {
   it('renders text and "Try: …" line for a finding with a fix', () => {
