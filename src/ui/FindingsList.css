@@ -1,0 +1,55 @@
+.findings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.finding {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.finding__dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  background: var(--text-dim);
+}
+
+.finding--info .finding__dot {
+  background: var(--accent);
+}
+
+.finding--warn .finding__dot {
+  background: var(--warn);
+}
+
+.finding--bad .finding__dot {
+  background: var(--bad);
+}
+
+.finding--healthy .finding__dot {
+  background: var(--good);
+}
+
+.finding__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.finding__text {
+  font-family: var(--font-body);
+}
+
+.finding__fix {
+  font-family: var(--font-body);
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+}
