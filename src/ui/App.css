@@ -1,0 +1,102 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.app__main {
+  flex: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: var(--s6) var(--s5) var(--s8);
+}
+
+.app__footer {
+  text-align: center;
+  padding: var(--s5);
+  font-size: 12px;
+}
+
+/* ---- landing --------------------------------------------------------- */
+
+.landing {
+  max-width: 620px;
+  margin: var(--s8) auto 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s4);
+}
+.landing__title {
+  font-size: clamp(32px, 6vw, 52px);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+}
+.landing__f {
+  color: var(--accent);
+}
+.landing__pitch {
+  color: var(--text-dim);
+  font-size: 16px;
+  max-width: 48ch;
+  margin: 0 0 var(--s3);
+}
+.landing .dropzone {
+  width: 100%;
+}
+.landing__status {
+  font-size: 14px;
+}
+.landing__error {
+  color: var(--bad);
+  font-size: 14px;
+}
+
+/* ---- results --------------------------------------------------------- */
+
+.results {
+  gap: var(--s5);
+  animation: results-in var(--dur-slow) var(--ease) both;
+}
+
+.results__hero {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: var(--s5);
+  align-items: stretch;
+}
+
+.results__cols {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--s5);
+  align-items: start;
+}
+
+.results__actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--s4);
+  padding-top: var(--s4);
+}
+
+/* one orchestrated entrance; collapses under reduced-motion via theme.css */
+@keyframes results-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 860px) {
+  .results__hero,
+  .results__cols {
+    grid-template-columns: 1fr;
+  }
+}
