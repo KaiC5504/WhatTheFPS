@@ -1,6 +1,7 @@
 import { Card } from './primitives';
 import { saveSpecs } from '../storage/specsStore';
 import type { InferredSpecs } from '../types';
+import './SpecsCard.css';
 
 interface SpecsCardProps {
   specs: InferredSpecs;

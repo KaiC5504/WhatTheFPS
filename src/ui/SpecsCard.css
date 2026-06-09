@@ -1,0 +1,43 @@
+.specs-card__fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s4);
+  margin-top: var(--s4);
+}
+
+.specs-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.specs-card__field input[type='text'],
+.specs-card__field input[type='number'] {
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s2) var(--s3);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+
+.specs-card__field input[type='text']:focus,
+.specs-card__field input[type='number']:focus {
+  border-color: var(--accent);
+}
+
+.specs-card__field--laptop {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.specs-card__field--laptop input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
