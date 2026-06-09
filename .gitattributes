@@ -1,4 +1,4 @@
 # HWiNFO sample logs are Windows-1252 and the golden tests depend on their exact
-# bytes. Never normalize line endings or treat them as text.
-HWINFO samples/** -text
+# bytes. Never normalize line endings or treat them as text. (All samples are .CSV;
+# the tiny hand-authored fixtures use lowercase .csv and stay as normal text.)
 *.CSV -text
