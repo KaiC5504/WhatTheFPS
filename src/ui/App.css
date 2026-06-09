@@ -15,50 +15,106 @@
 .app__footer {
   text-align: center;
   padding: var(--s5);
-  font-size: 12px;
+  font-size: var(--text-xs);
+  border-top: 1px solid var(--border);
 }
 
 /* ---- landing --------------------------------------------------------- */
 
 .landing {
-  max-width: 620px;
-  margin: var(--s8) auto 0;
+  max-width: 640px;
+  margin: var(--s7) auto 0;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--s4);
 }
+
+/* staggered power-on entrance for each block */
+.landing > * {
+  animation: rise var(--dur-slow) var(--ease) backwards;
+}
+.landing > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.landing > *:nth-child(2) {
+  animation-delay: 70ms;
+}
+.landing > *:nth-child(3) {
+  animation-delay: 140ms;
+}
+.landing > *:nth-child(4) {
+  animation-delay: 210ms;
+}
+.landing > *:nth-child(5) {
+  animation-delay: 280ms;
+}
+
+.landing__mascot {
+  margin-bottom: calc(-1 * var(--s2));
+}
+/* slow idle bob so the greeter feels alive; disabled under reduced-motion */
+.landing__mascot svg {
+  animation: bob 4.5s ease-in-out infinite;
+}
+
+.landing__kicker {
+  letter-spacing: 0.18em;
+}
+
 .landing__title {
-  font-size: clamp(32px, 6vw, 52px);
-  line-height: 1.05;
-  letter-spacing: 0.01em;
+  font-size: clamp(36px, 7vw, 60px);
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  font-weight: 700;
 }
 .landing__f {
   color: var(--accent);
+  text-shadow: 0 0 24px var(--accent-glow);
 }
+
 .landing__pitch {
   color: var(--text-dim);
   font-size: 16px;
-  max-width: 48ch;
-  margin: 0 0 var(--s3);
+  max-width: 50ch;
+  margin: 0 0 var(--s2);
 }
 .landing .dropzone {
   width: 100%;
 }
 .landing__status {
-  font-size: 14px;
+  font-size: var(--text-sm);
 }
 .landing__error {
   color: var(--bad);
-  font-size: 14px;
+  font-size: var(--text-sm);
 }
 
 /* ---- results --------------------------------------------------------- */
 
 .results {
   gap: var(--s5);
-  animation: results-in var(--dur-slow) var(--ease) both;
+}
+
+/* major panels rise in sequence; stat tiles cascade further within the hero */
+.results > * {
+  animation: rise var(--dur-slow) var(--ease) backwards;
+}
+.results > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.results > *:nth-child(2) {
+  animation-delay: 80ms;
+}
+.results > *:nth-child(3) {
+  animation-delay: 160ms;
+}
+.results > *:nth-child(4) {
+  animation-delay: 240ms;
+}
+.results > *:nth-child(5) {
+  animation-delay: 320ms;
 }
 
 .results__hero {
@@ -82,15 +138,24 @@
   padding-top: var(--s4);
 }
 
-/* one orchestrated entrance; collapses under reduced-motion via theme.css */
-@keyframes results-in {
+@keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
   }
 }
 

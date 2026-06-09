@@ -56,6 +56,10 @@ export function DropZone({ onFile, disabled = false }: DropZoneProps) {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
+      <span className="dropzone__bracket dropzone__bracket--tl" aria-hidden="true" />
+      <span className="dropzone__bracket dropzone__bracket--tr" aria-hidden="true" />
+      <span className="dropzone__bracket dropzone__bracket--bl" aria-hidden="true" />
+      <span className="dropzone__bracket dropzone__bracket--br" aria-hidden="true" />
       <input
         ref={inputRef}
         type="file"
@@ -65,7 +69,21 @@ export function DropZone({ onFile, disabled = false }: DropZoneProps) {
         style={{ display: 'none' }}
         aria-hidden="true"
       />
-      <p className="dropzone__prompt">Drop your HWiNFO .CSV here</p>
+      <svg
+        className="dropzone__glyph"
+        viewBox="0 0 48 48"
+        width="44"
+        height="44"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path d="M24 6 V28" stroke="currentColor" strokeWidth={3} strokeLinecap="round" />
+        <path d="M15 21 L24 30 L33 21" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M10 36 H38" stroke="currentColor" strokeWidth={3} strokeLinecap="round" />
+      </svg>
+      <p className="dropzone__prompt">
+        Drop your HWiNFO <span className="dropzone__ext">.CSV</span> here
+      </p>
       <Button
         variant="ghost"
         disabled={disabled}

@@ -27,6 +27,8 @@
   --accent-bright: #6bb6ff;
   --accent-dim: rgba(59, 158, 255, 0.14);
   --accent-line: rgba(59, 158, 255, 0.4);
+  --accent-glow: rgba(59, 158, 255, 0.55); /* focal text/element bloom */
+  --accent-wash: rgba(59, 158, 255, 0.05); /* faint atmospheric tint */
   --on-accent: #07101c; /* dark navy text on accent fills */
 
   /* Semantic — warm for heat, green clearly green, never blue */
@@ -46,6 +48,14 @@
   --font-display: 'Chakra Petch', system-ui, sans-serif;
   --font-body: 'Hanken Grotesk Variable', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Type scale */
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 19px;
+  --text-xl: 24px;
+  --text-2xl: 30px;
 
   /* Spacing */
   --s1: 4px;
@@ -68,6 +78,7 @@
   --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
   --shadow-glass: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 24px 70px rgba(0, 0, 0, 0.55);
   --shadow-pop: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --shadow-header: 0 8px 24px -16px rgba(0, 0, 0, 0.8);
 
   /* Motion */
   --dur-fast: 120ms;
@@ -98,10 +109,14 @@ body {
   font-size: 15px;
   line-height: 1.5;
   color: var(--text);
+  /* atmosphere stack: two horizon glows over a faint engineering grid */
   background:
     radial-gradient(1200px 620px at 72% -12%, rgba(59, 158, 255, 0.1), transparent 60%),
     radial-gradient(900px 520px at 8% 112%, rgba(255, 140, 60, 0.045), transparent 55%),
+    linear-gradient(rgba(255, 255, 255, 0.017) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.017) 1px, transparent 1px),
     var(--bg);
+  background-size: auto, auto, 36px 36px, 36px 36px, auto;
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -242,12 +257,19 @@ a {
   flex-direction: column;
   gap: var(--s2);
   padding: var(--s4) var(--s4) var(--s4) var(--s5);
-  background: var(--surface);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   overflow: hidden;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
-/* severity bar on the leading edge */
+.stat-tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+}
+/* severity bar on the leading edge, with a faint matching glow */
 .stat-tile::before {
   content: '';
   position: absolute;
@@ -256,6 +278,12 @@ a {
   bottom: 0;
   width: 3px;
   background: var(--accent-line);
+}
+.stat-tile--warn::before {
+  box-shadow: 0 0 18px -2px var(--warn);
+}
+.stat-tile--bad::before {
+  box-shadow: 0 0 18px -2px var(--bad);
 }
 .stat-tile__label {
   color: var(--text-mute);

@@ -1,9 +1,14 @@
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-pop);
   display: flex;
   align-items: center;
   gap: var(--s4);
   padding: var(--s4) var(--s5);
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-header);
 }
 
 .topbar__tagline {

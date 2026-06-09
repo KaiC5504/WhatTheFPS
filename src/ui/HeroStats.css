@@ -1,5 +1,37 @@
 .hero-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--space-3);
+  gap: var(--s3);
+}
+
+/* Tiles power on in sequence after the panel settles. fill-mode is backwards (not
+   both) so the held final transform doesn't clobber the :hover lift afterward. */
+.hero-stats .stat-tile {
+  animation: tile-in var(--dur) var(--ease) backwards;
+}
+.hero-stats .stat-tile:nth-child(1) {
+  animation-delay: 40ms;
+}
+.hero-stats .stat-tile:nth-child(2) {
+  animation-delay: 90ms;
+}
+.hero-stats .stat-tile:nth-child(3) {
+  animation-delay: 140ms;
+}
+.hero-stats .stat-tile:nth-child(4) {
+  animation-delay: 190ms;
+}
+.hero-stats .stat-tile:nth-child(5) {
+  animation-delay: 240ms;
+}
+
+@keyframes tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

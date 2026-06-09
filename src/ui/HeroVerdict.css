@@ -2,43 +2,71 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-6) var(--space-5);
+  gap: var(--s4);
+  padding: var(--s7) var(--s5) var(--s6);
   text-align: center;
 }
 
-.hero-verdict__pill {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-pill);
-  border: 1px solid currentColor;
+/* Severity-tinted bloom behind the mascot — ties the run's mood to the whole panel.
+   Sits below the content (which is lifted to z-index 1) but above the glass fill. */
+.hero-verdict::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(62% 68% at 50% 26%, var(--bloom, transparent), transparent 72%);
+  opacity: 0.7;
+}
+.hero-verdict > * {
+  position: relative;
+  z-index: 1;
 }
 
+.hero-verdict--good {
+  --bloom: var(--good-dim);
+}
+.hero-verdict--warn {
+  --bloom: var(--warn-dim);
+}
+.hero-verdict--bad {
+  --bloom: var(--bad-dim);
+}
+
+.hero-verdict__pill {
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+}
 .hero-verdict--good .hero-verdict__pill {
   color: var(--good);
+  background: var(--good-dim);
+  border-color: var(--good);
 }
-
 .hero-verdict--warn .hero-verdict__pill {
   color: var(--warn);
+  background: var(--warn-dim);
+  border-color: var(--warn);
 }
-
 .hero-verdict--bad .hero-verdict__pill {
   color: var(--bad);
+  background: var(--bad-dim);
+  border-color: var(--bad);
 }
 
 .hero-verdict__headline {
   font-family: var(--font-display);
-  font-size: var(--text-2xl);
+  font-size: clamp(22px, 2.6vw, 30px);
+  line-height: 1.12;
   margin: 0;
+  max-width: 18ch;
 }
-
 .hero-verdict--good .hero-verdict__headline {
   color: var(--good);
 }
-
 .hero-verdict--warn .hero-verdict__headline {
   color: var(--warn);
 }
-
 .hero-verdict--bad .hero-verdict__headline {
   color: var(--bad);
 }

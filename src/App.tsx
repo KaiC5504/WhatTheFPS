@@ -8,6 +8,7 @@ import { FindingsList } from './ui/FindingsList';
 import { DigestPanel } from './ui/DigestPanel';
 import { SpecsCard } from './ui/SpecsCard';
 import { NerdView } from './ui/NerdView';
+import { Mascot } from './ui/Mascot';
 import { useAnalysis, type AnalysisStatus } from './ui/useAnalysis';
 import { loadSpecs } from './storage/specsStore';
 import { Button } from './ui/primitives';
@@ -60,6 +61,10 @@ function Landing({
 }) {
   return (
     <section className="landing">
+      <div className="landing__mascot">
+        <Mascot mood="chill" size={104} />
+      </div>
+      <p className="landing__kicker u-label">HWiNFO sensor-log analyzer</p>
       <h1 className="landing__title">
         What the <span className="landing__f">F</span>PS is going on?
       </h1>
