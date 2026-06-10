@@ -6,7 +6,9 @@
   align-items: center;
   gap: var(--s4);
   padding: var(--s4) var(--s5);
-  background: var(--bg);
+  background: var(--bar-bg);
+  -webkit-backdrop-filter: blur(var(--bar-blur));
+  backdrop-filter: blur(var(--bar-blur));
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow-header);
 }
@@ -27,10 +29,10 @@
   align-items: center;
   gap: var(--s1);
   margin-left: auto;
-  background: var(--surface);
+  background: var(--fill-faint);
   padding: var(--s1);
   border-radius: var(--r-pill);
-  border: 1px solid var(--border);
+  border: 1px solid var(--panel-border);
 }
 
 /* tighten the toggle buttons inside the pill container */
@@ -38,4 +40,9 @@
   border-radius: var(--r-pill);
   padding: var(--s2) var(--s4);
   font-size: 13px;
+}
+
+/* the live mode lamp — one of the five sanctioned glows (see DESIGN.md) */
+.topbar__toggle .btn--accent {
+  box-shadow: var(--glow-accent);
 }

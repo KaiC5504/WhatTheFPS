@@ -11,7 +11,7 @@
   border-radius: var(--r-lg);
   background:
     radial-gradient(120% 120% at 50% 0%, var(--accent-wash), transparent 60%),
-    var(--surface);
+    var(--panel-bg);
   transition:
     border-color var(--dur-fast) var(--ease),
     background var(--dur-fast) var(--ease),
