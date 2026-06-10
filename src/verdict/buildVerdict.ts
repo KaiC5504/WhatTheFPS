@@ -1,6 +1,7 @@
 import type {
   NormalizedLog, CanonicalKey, Stats, DiagEvent,
   Verdict, Health, MascotMood, HeroNumber, Finding, Severity,
+  WindowAnalysis,
 } from '../types';
 
 const SEVERITY_RANK: Record<Severity, number> = { bad: 3, warn: 2, info: 1 };
@@ -87,6 +88,7 @@ export function buildVerdict(
   log: NormalizedLog,
   stats: Partial<Record<CanonicalKey, Stats>>,
   events: DiagEvent[],
+  windows: WindowAnalysis,
 ): Verdict {
   const health = healthFromEvents(events);
   const ranked = sortedFindings(events);
@@ -94,6 +96,7 @@ export function buildVerdict(
   const findings: Finding[] = ranked.slice(0, 4).map((e) => {
     const f: Finding = { severity: e.severity, text: e.sentence };
     if (e.fix !== undefined) f.fix = e.fix;
+    if (e.evidence !== undefined) f.evidence = e.evidence;
     return f;
   });
 
@@ -105,5 +108,10 @@ export function buildVerdict(
     headline,
     hero: buildHero(log, stats),
     findings,
+    timeSplit: windows.timeSplit,
+    worst: windows.worst,
+    primaryFix: null,
+    coverage: null,
+    guidance: [],
   };
 }

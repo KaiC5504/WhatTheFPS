@@ -48,7 +48,7 @@ export function analyze(bytes: Uint8Array, opts: AnalyzeOptions = {}): AnalysisR
     ...causeHotspotDelta(log, stats, windows),
   ];
 
-  const verdict = buildVerdict(log, stats, events);
+  const verdict = buildVerdict(log, stats, events, windows);
   const digest = buildDigest({ log, stats, events, goal: opts.goal });
 
   return { log, stats, events, verdict, digest, windows };

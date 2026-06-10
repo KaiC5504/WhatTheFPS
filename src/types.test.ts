@@ -47,7 +47,7 @@ describe('types', () => {
 
   it('an AnalysisResult carries verdict + digest shape', () => {
     const result: Pick<AnalysisResult, 'verdict' | 'digest'> = {
-      verdict: { health: 'good', mascotMood: 'chill', headline: 'ok', hero: [], findings: [] },
+      verdict: { health: 'good', mascotMood: 'chill', headline: 'ok', hero: [], findings: [], timeSplit: null, worst: [], primaryFix: null, coverage: null, guidance: [] },
       digest: { compact: 'x', full: 'xx', tokenEstimate: { compact: 1, full: 2 }, fpsSourceLabel: '' },
     };
     expect(result.verdict.mascotMood).toBe('chill');

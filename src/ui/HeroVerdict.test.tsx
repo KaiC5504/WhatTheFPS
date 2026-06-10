@@ -9,6 +9,11 @@ const goodVerdict: Verdict = {
   headline: 'Your run looks healthy',
   hero: [],
   findings: [],
+  timeSplit: null,
+  worst: [],
+  primaryFix: null,
+  coverage: null,
+  guidance: [],
 };
 
 const warnVerdict: Verdict = {
@@ -17,6 +22,11 @@ const warnVerdict: Verdict = {
   headline: 'Some things worth reviewing',
   hero: [],
   findings: [],
+  timeSplit: null,
+  worst: [],
+  primaryFix: null,
+  coverage: null,
+  guidance: [],
 };
 
 const badVerdict: Verdict = {
@@ -25,6 +35,11 @@ const badVerdict: Verdict = {
   headline: 'Several issues detected',
   hero: [],
   findings: [],
+  timeSplit: null,
+  worst: [],
+  primaryFix: null,
+  coverage: null,
+  guidance: [],
 };
 
 describe('HeroVerdict', () => {

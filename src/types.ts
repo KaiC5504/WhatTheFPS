@@ -175,8 +175,20 @@ export interface WindowAnalysis {
 export type Health = 'good' | 'warn' | 'bad';
 export type MascotMood = 'chill' | 'concerned' | 'panic';
 export interface HeroNumber { key: string; label: string; value: string; severity: Severity; }
-export interface Finding { severity: Severity; text: string; fix?: string; }
-export interface Verdict { health: Health; mascotMood: MascotMood; headline: string; hero: HeroNumber[]; findings: Finding[]; }
+export interface Finding { severity: Severity; text: string; fix?: string; evidence?: Evidence; }
+
+export interface Verdict {
+  health: Health;
+  mascotMood: MascotMood;
+  headline: string;
+  hero: HeroNumber[];
+  findings: Finding[];
+  timeSplit: TimeSplit | null;
+  worst: WorstMoment[];
+  primaryFix: Finding | null;
+  coverage: { gameplayMs: number; totalMs: number } | null;
+  guidance: SensorGuidance[];
+}
 
 export type DigestMode = 'compact' | 'full';
 export interface Digest { compact: string; full: string; tokenEstimate: Record<DigestMode, number>; fpsSourceLabel: string; }

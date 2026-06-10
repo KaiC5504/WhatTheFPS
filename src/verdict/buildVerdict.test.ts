@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeStats } from '../stats/percentiles';
-import { makeLog } from '../causes/testkit';
+import { makeLog, makeWindowAnalysis } from '../causes/testkit';
 import { makeEvent } from '../causes/events';
 import { buildVerdict } from './buildVerdict';
 import type { CanonicalKey, Stats } from '../types';
@@ -20,7 +20,7 @@ describe('buildVerdict', () => {
       'gpu.temp': [65, 66, 64],
     };
     const log = makeLog({ sensors, fps: { source: 'displayed', stats: computeStats([120, 121, 119]) } });
-    const v = buildVerdict(log, statsFor(sensors), []);
+    const v = buildVerdict(log, statsFor(sensors), [], makeWindowAnalysis([]));
     expect(v.health).toBe('good');
     expect(v.mascotMood).toBe('chill');
     expect(v.hero).toHaveLength(5);
@@ -39,7 +39,7 @@ describe('buildVerdict', () => {
     const events = [
       makeEvent({ type: 'throttling', severity: 'bad', sentence: 'GPU thermal throttled in 4 samples.', fix: 'Improve cooling.', sampleCount: 4 }),
     ];
-    const v = buildVerdict(log_with(sensors), statsFor(sensors), events);
+    const v = buildVerdict(log_with(sensors), statsFor(sensors), events, makeWindowAnalysis([]));
     expect(v.health).toBe('bad');
     expect(v.mascotMood).toBe('panic');
     const gpuTemp = v.hero.find((h) => h.key === 'gpu.temp')!;
@@ -52,7 +52,7 @@ describe('buildVerdict', () => {
   it('maps a warn event to warn health + concerned mascot', () => {
     const sensors = { 'gpu.usage': [70, 71], 'gpu.temp': [86, 87] };
     const events = [makeEvent({ type: 'cpu-bottleneck', severity: 'warn', sentence: 'GPU averaged 70%.', sampleCount: 2 })];
-    const v = buildVerdict(log_with(sensors), statsFor(sensors), events);
+    const v = buildVerdict(log_with(sensors), statsFor(sensors), events, makeWindowAnalysis([]));
     expect(v.health).toBe('warn');
     expect(v.mascotMood).toBe('concerned');
     expect(v.hero.find((h) => h.key === 'gpu.temp')!.severity).toBe('warn'); // >=85 <90
@@ -61,7 +61,7 @@ describe('buildVerdict', () => {
   it('shows an em-dash FPS tile when no framerate was logged and never counts it as bad', () => {
     const sensors = { 'gpu.temp': [70, 71] };
     const log = makeLog({ sensors, fps: { source: 'none', stats: null } });
-    const v = buildVerdict(log, statsFor(sensors), []);
+    const v = buildVerdict(log, statsFor(sensors), [], makeWindowAnalysis([]));
     const fps = v.hero.find((h) => h.key === 'fps')!;
     expect(fps.value).toBe('—');
     expect(fps.severity).toBe('info');
@@ -73,7 +73,7 @@ describe('buildVerdict', () => {
     const events = Array.from({ length: 6 }, (_, i) =>
       makeEvent({ type: `t${i}`, severity: 'warn', sentence: `event ${i}`, sampleCount: 1 }),
     );
-    const v = buildVerdict(log_with(sensors), statsFor(sensors), events);
+    const v = buildVerdict(log_with(sensors), statsFor(sensors), events, makeWindowAnalysis([]));
     expect(v.findings.length).toBeLessThanOrEqual(4);
     expect(v.findings.length).toBeGreaterThanOrEqual(2);
   });
