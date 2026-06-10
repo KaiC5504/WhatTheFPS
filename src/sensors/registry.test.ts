@@ -51,4 +51,27 @@ describe('findSensor', () => {
   it('is case-insensitive', () => {
     expect(key('total cpu usage')).toBe('cpu.usageTotal');
   });
+  it('maps the PresentMon block', () => {
+    expect(key('GPU Busy (avg)')).toBe('pm.gpuBusyMs');
+    expect(key('GPU Wait (avg)')).toBe('pm.gpuWaitMs');
+    expect(key('CPU Busy (avg)')).toBe('pm.cpuBusyMs');
+    expect(key('CPU Wait (avg)')).toBe('pm.cpuWaitMs');
+    expect(key('Frame Time Presented (avg)')).toBe('pm.frameTimeMs');
+  });
+  it('maps RTSS frame time and VRAM MB columns', () => {
+    expect(key('Frame Time')).toBe('rtss.frameTimeMs');
+    expect(key('GPU Memory Allocated')).toBe('vram.allocatedMb');
+    expect(key('GPU Memory Available')).toBe('vram.availableMb');
+    expect(key('GPU D3D Memory Dedicated')).toBe('vram.d3dDedicatedMb');
+    expect(key('GPU D3D Memory Dynamic')).toBe('vram.d3dDynamicMb');
+    expect(key('GPU Memory Controller Load')).toBe('gpu.memControllerLoad');
+  });
+  it('maps the extra GPU limiter flags, AMD throttle reasons onto the same semantic keys', () => {
+    expect(key('Performance Limit - Reliability Voltage')).toBe('flag.gpu.perfLimitVRel');
+    expect(key('Performance Limit - Max Operating Voltage')).toBe('flag.gpu.perfLimitVOp');
+    expect(key('Throttle Reason - Power')).toBe('flag.gpu.perfLimitPower');
+    expect(key('Throttle Reason - Thermal')).toBe('flag.gpu.perfLimitThermal');
+    expect(key('Throttle Reason - Current')).toBe('flag.gpu.perfLimitCurrent');
+    expect(key('Thermal Throttling (PROCHOT EXT)')).toBe('flag.cpu.prochot');
+  });
 });

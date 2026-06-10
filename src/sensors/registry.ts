@@ -70,6 +70,32 @@ const DEFS: SensorDef[] = [
   { key: 'gpu.power', domain: 'gpu', kind: 'numeric', label: 'GPU Power', unit: 'W',
     match: eq('GPU Power') },
 
+  // VRAM in MB — these names exist in both dGPU and iGPU blocks; normalize disambiguates
+  { key: 'vram.allocatedMb', domain: 'gpu', kind: 'numeric', label: 'GPU Memory Allocated', unit: 'MB',
+    match: eq('GPU Memory Allocated') },
+  { key: 'vram.availableMb', domain: 'gpu', kind: 'numeric', label: 'GPU Memory Available', unit: 'MB',
+    match: eq('GPU Memory Available') },
+  { key: 'vram.d3dDedicatedMb', domain: 'gpu', kind: 'numeric', label: 'GPU D3D Memory Dedicated', unit: 'MB',
+    match: eq('GPU D3D Memory Dedicated') },
+  { key: 'vram.d3dDynamicMb', domain: 'gpu', kind: 'numeric', label: 'GPU D3D Memory Dynamic', unit: 'MB',
+    match: eq('GPU D3D Memory Dynamic') },
+  { key: 'gpu.memControllerLoad', domain: 'gpu', kind: 'numeric', label: 'GPU Memory Controller Load', unit: '%',
+    match: eq('GPU Memory Controller Load') },
+
+  // PresentMon block (HWiNFO 7.63+)
+  { key: 'pm.gpuBusyMs', domain: 'gpu', kind: 'numeric', label: 'GPU Busy', unit: 'ms',
+    match: eq('GPU Busy (avg)') },
+  { key: 'pm.gpuWaitMs', domain: 'gpu', kind: 'numeric', label: 'GPU Wait', unit: 'ms',
+    match: eq('GPU Wait (avg)') },
+  { key: 'pm.cpuBusyMs', domain: 'cpu', kind: 'numeric', label: 'CPU Busy', unit: 'ms',
+    match: eq('CPU Busy (avg)') },
+  { key: 'pm.cpuWaitMs', domain: 'cpu', kind: 'numeric', label: 'CPU Wait', unit: 'ms',
+    match: eq('CPU Wait (avg)') },
+  { key: 'pm.frameTimeMs', domain: 'gpu', kind: 'numeric', label: 'Frame Time Presented', unit: 'ms',
+    match: eq('Frame Time Presented (avg)') },
+  { key: 'rtss.frameTimeMs', domain: 'gpu', kind: 'numeric', label: 'Frame Time (RTSS)', unit: 'ms',
+    match: eq('Frame Time') },
+
   // memory
   { key: 'ram.loadPct', domain: 'ram', kind: 'numeric', label: 'Physical Memory Load', unit: '%',
     match: eq('Physical Memory Load') },
@@ -82,19 +108,25 @@ const DEFS: SensorDef[] = [
   { key: 'flag.cpu.thermalThrottle', domain: 'flag', kind: 'flag', label: 'CPU Thermal Throttling', unit: 'Yes/No',
     match: eq('Core Thermal Throttling (avg)', 'Package/Ring Thermal Throttling', 'Thermal Throttling (HTC)') },
   { key: 'flag.cpu.prochot', domain: 'flag', kind: 'flag', label: 'CPU PROCHOT', unit: 'Yes/No',
-    match: eq('IA: PROCHOT', 'Thermal Throttling (PROCHOT CPU)') },
+    match: eq('IA: PROCHOT', 'Thermal Throttling (PROCHOT CPU)', 'Thermal Throttling (PROCHOT EXT)') },
   { key: 'flag.cpu.ratl', domain: 'flag', kind: 'flag', label: 'CPU Running Average Thermal Limit', unit: 'Yes/No',
     match: eq('IA: Running Average Thermal Limit') },
   { key: 'flag.cpu.powerLimit', domain: 'flag', kind: 'flag', label: 'CPU Power Limit Exceeded', unit: 'Yes/No',
     match: eq('Core Power Limit Exceeded (avg)', 'Package/Ring Power Limit Exceeded') },
 
-  // GPU performance-limiter flags
+  // GPU performance-limiter flags (AMD's 'Throttle Reason - *' map onto the same semantic keys)
   { key: 'flag.gpu.perfLimitPower', domain: 'flag', kind: 'flag', label: 'GPU Perf Limit Power', unit: 'Yes/No',
-    match: eq('Performance Limit - Power') },
+    match: eq('Performance Limit - Power', 'Throttle Reason - Power') },
   { key: 'flag.gpu.perfLimitThermal', domain: 'flag', kind: 'flag', label: 'GPU Perf Limit Thermal', unit: 'Yes/No',
-    match: eq('Performance Limit - Thermal') },
+    match: eq('Performance Limit - Thermal', 'Throttle Reason - Thermal') },
   { key: 'flag.gpu.perfLimitUtil', domain: 'flag', kind: 'flag', label: 'GPU Perf Limit Utilization', unit: 'Yes/No',
     match: eq('Performance Limit - Utilization') },
+  { key: 'flag.gpu.perfLimitVRel', domain: 'flag', kind: 'flag', label: 'GPU Perf Limit Reliability Voltage', unit: 'Yes/No',
+    match: eq('Performance Limit - Reliability Voltage') },
+  { key: 'flag.gpu.perfLimitVOp', domain: 'flag', kind: 'flag', label: 'GPU Perf Limit Max Operating Voltage', unit: 'Yes/No',
+    match: eq('Performance Limit - Max Operating Voltage') },
+  { key: 'flag.gpu.perfLimitCurrent', domain: 'flag', kind: 'flag', label: 'GPU Perf Limit Current', unit: 'Yes/No',
+    match: eq('Throttle Reason - Current') },
 ];
 
 export function findSensor(name: string): SensorDef | null {
