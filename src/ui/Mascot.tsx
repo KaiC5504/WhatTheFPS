@@ -19,7 +19,8 @@ const EYE: Record<MascotMood, { cy: number; ry: number; py: number; pr: number }
 };
 
 // The mouth is an FPS trace: a healthy spike when chill, a frame-drop dip when
-// concerned, a crash when panicking. The orange dot marks the extreme frame.
+// concerned, a crash when panicking. The orange dot marks the extreme frame,
+// so dotX/dotY must sit on the matching vertex in points.
 const WAVE: Record<MascotMood, { points: string; dotX: number; dotY: number }> = {
   chill: {
     points: '31,63 37,63 42,60.8 46,65 50,57 54,65 58,60.8 63,63 69,63',
