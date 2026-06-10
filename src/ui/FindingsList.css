@@ -7,15 +7,16 @@
   gap: var(--s2);
 }
 
-/* Each finding reads as a row in a status log: a faint surface card with a
-   severity-coded leading edge and a glowing indicator. */
+/* Each finding reads as a row in a status log: a floating panel row with a
+   severity-coded leading edge and a solid indicator dot. Dots don't glow —
+   see the closed glow list in DESIGN.md. */
 .finding {
   display: flex;
   align-items: flex-start;
   gap: var(--s3);
   padding: var(--s3) var(--s4);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
   border-left: 2px solid var(--text-mute);
   border-radius: var(--r-md);
 }
@@ -34,7 +35,6 @@
 }
 .finding--info .finding__dot {
   background: var(--accent);
-  box-shadow: 0 0 10px var(--accent);
 }
 
 .finding--warn {
@@ -42,7 +42,6 @@
 }
 .finding--warn .finding__dot {
   background: var(--warn);
-  box-shadow: 0 0 10px var(--warn);
 }
 
 .finding--bad {
@@ -50,7 +49,6 @@
 }
 .finding--bad .finding__dot {
   background: var(--bad);
-  box-shadow: 0 0 10px var(--bad);
 }
 
 .finding--healthy {
@@ -58,7 +56,6 @@
 }
 .finding--healthy .finding__dot {
   background: var(--good);
-  box-shadow: 0 0 10px var(--good);
 }
 
 .finding__body {
