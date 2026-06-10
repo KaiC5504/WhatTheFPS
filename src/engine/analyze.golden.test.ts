@@ -93,6 +93,11 @@ describe('analyze (golden, real logs)', () => {
     for (const e of r.events) expect(e.sentence.toLowerCase()).not.toContain('gameplay');
   });
 
+  it('digest format lock (superposition log)', () => {
+    const r = analyze(sample('Intel + Nvidia/StrixG16_superposition_GPU_1080extreme_5633score.CSV'));
+    expect(r.digest.full).toMatchSnapshot();
+  });
+
   it('all 12 sample logs analyze cleanly: no throw, 5 finite hero tiles, digest text, no invented numbers', () => {
     const logs = allSampleLogs();
     expect(logs.length).toBe(12);

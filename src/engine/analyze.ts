@@ -49,7 +49,7 @@ export function analyze(bytes: Uint8Array, opts: AnalyzeOptions = {}): AnalysisR
   ];
 
   const verdict = buildVerdict(log, stats, events, windows);
-  const digest = buildDigest({ log, stats, events, goal: opts.goal });
+  const digest = buildDigest({ log, stats, events, windows, guidance: verdict.guidance, goal: opts.goal });
 
   return { log, stats, events, verdict, digest, windows };
 }

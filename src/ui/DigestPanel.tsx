@@ -16,7 +16,7 @@ export function DigestPanel({
   const [mode, setMode] = useState<DigestMode>('compact');
   const [goal, setGoal] = useState(DEFAULT_GOAL);
 
-  // Recompute whenever mode, goal, or specs change. We inject the caller's
+  // Recompute whenever the result, goal, or specs change. We inject the caller's
   // (possibly user-edited) specs into the log so they flow into the prompt.
   const digest = useMemo(
     () =>
@@ -24,9 +24,11 @@ export function DigestPanel({
         log: { ...result.log, specs },
         stats: result.stats,
         events: result.events,
+        windows: result.windows,
+        guidance: result.verdict.guidance,
         goal,
       }),
-    [result.log, result.stats, result.events, specs, goal],
+    [result.log, result.stats, result.events, result.windows, result.verdict.guidance, specs, goal],
   );
 
   function handleCopy() {

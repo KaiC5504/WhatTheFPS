@@ -1,0 +1,46 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`analyze (golden, real logs) > digest format lock (superposition log) 1`] = `
+"HWiNFO session summary (full):
+
+System (inferred, edit if wrong):
+- Machine: ASUS ROG Strix G614JI_G614JI
+- CPU: Intel Core i7-13650HX
+- GPU: NVIDIA GeForce RTX 4070 Laptop
+- iGPU: Intel UHD Graphics
+- RAM: 32 GB (Kingston KF556S40-16 ×2)
+- Form factor: laptop
+
+Sensors:
+- CPU temp: avg 75.0 °C, p95 76 °C, p99 77 °C, max 77 °C
+- CPU core temp (max): avg 69.1 °C, p95 74 °C, p99 74 °C, max 75 °C
+- GPU temp: avg 76.3 °C, p95 81.6 °C, p99 82.4 °C, max 82.5 °C
+- GPU hotspot: avg 85.2 °C, p95 91.6 °C, p99 92.7 °C, max 93.2 °C
+- GPU clock: avg 2240 MHz, p95 2250 MHz, p99 2250 MHz, max 2250 MHz
+- CPU usage: avg 11.2%, 1% low 7.5%, 5% low 7.9%
+- GPU usage: avg 74.6%, 1% low 0%, 5% low 0%
+- CPU clock: avg 2721.8 MHz, p95 3541.3 MHz, p99 3822.7 MHz, max 3869.1 MHz
+- GPU mem junction: avg 70.7 °C, p95 74 °C, p99 74 °C, max 74 °C
+- GPU power: avg 73.9 W, p95 87.6 W, p99 90.4 W, max 91.0 W
+- CPU power: avg 19.7 W, p95 22.8 W, p99 27.6 W, max 27.7 W
+- GPU mem usage: avg 44.9%, 1% low 12.4%, 5% low 12.5%
+- RAM load: avg 36.1%, 1% low 27.5%, 5% low 27.6%
+- CPU core usage (max): avg 77.2%, 1% low 31.3%, 5% low 42.3%
+- FPS (source: Framerate Displayed (avg)): avg 43.5, 1% low 0.6, 5% low 11
+- FPS split: presented avg 43.8, displayed avg 43.5
+
+Coverage: analyzed 2.7 min of gameplay out of 2.7 min logged (8 s windows)
+Time split (gameplay only): ambiguous 67% [measured], CPU-bound 17% [measured], GPU-bound 8% [measured], GPU-underutilized 8% [measured]
+Frame times (PresentMon): avg 56.1 ms, p99 1592.4 ms, 1% low 4.1 FPS
+
+Worst moments:
+- +0m08s: −95% vs median (CPU-bound) — FPS 2, Frame time 876.5 ms, GPU busy 11.3 ms, GPU usage 3 %, GPU power 22 W, GPU temp 57 °C, Max CPU thread 73 %, Total CPU 20 %, RAM load 34 %, Flags fired GPU utilization limit [inferred]
+
+Detected events:
+- [info] [measured] The CPU held the GPU back for 17% of gameplay — the GPU sat idle waiting for frames.
+
+Missing data that would sharpen this:
+- finer polling (this log is ~2002 ms per sample) — Set the HWiNFO logging interval to 500–1000 ms for diagnosis runs.
+
+Goal: help me lower temps without losing FPS"
+`;

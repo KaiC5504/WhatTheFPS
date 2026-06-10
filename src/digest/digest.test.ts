@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeStats } from '../stats/percentiles';
-import { makeLog } from '../causes/testkit';
+import { makeLog, makeWindow, makeWindowAnalysis } from '../causes/testkit';
 import { makeEvent } from '../causes/events';
 import { buildDigest } from './digest';
 import type { CanonicalKey, Stats } from '../types';
@@ -33,7 +33,7 @@ function sampleResult() {
   const events = [
     makeEvent({ type: 'cpu-bottleneck', severity: 'warn', sentence: 'GPU averaged 96% usage.', fix: 'A faster CPU can help.', sampleCount: 5 }),
   ];
-  return { log, stats: statsFor(sensors), events };
+  return { log, stats: statsFor(sensors), events, windows: makeWindowAnalysis([]), guidance: [] };
 }
 
 describe('buildDigest', () => {
@@ -102,8 +102,64 @@ describe('buildDigest', () => {
   it('renders "no framerate logged" when there is no FPS source', () => {
     const sensors = { 'gpu.temp': [70, 71, 72] };
     const log = makeLog({ sensors, fps: { source: 'none', sourceLabel: '', stats: null } });
-    const d = buildDigest({ log, stats: statsFor(sensors), events: [] });
+    const d = buildDigest({ log, stats: statsFor(sensors), events: [], windows: makeWindowAnalysis([]), guidance: [] });
     expect(d.compact).toContain('no framerate logged');
     expect(d.fpsSourceLabel).toBe('');
+  });
+});
+
+describe('evidence blocks', () => {
+  function statsOf(log: ReturnType<typeof makeLog>): Partial<Record<CanonicalKey, Stats>> {
+    const out: Partial<Record<CanonicalKey, Stats>> = {};
+    for (const [k, s] of Object.entries(log.sensors)) out[k as CanonicalKey] = computeStats(s!.values);
+    return out;
+  }
+
+  function richInputs() {
+    const wa = makeWindowAnalysis([
+      makeWindow(0, { limiter: 'gpu', metrics: { fpsAvg: 100, frameTimeMs: 10, gpuBusyMs: 9.6, gpuUsage: 99 } }),
+      makeWindow(1, { limiter: 'gpu', metrics: { fpsAvg: 100, frameTimeMs: 10, gpuBusyMs: 9.6, gpuUsage: 99 } }),
+      makeWindow(2, { limiter: 'cpu', tier: 'measured', metrics: { fpsAvg: 55, frameTimeMs: 18, gpuBusyMs: 11 } }),
+      makeWindow(3, { activity: 'idle' }),
+    ]);
+    const log = makeLog({
+      sensors: { 'pm.frameTimeMs': [10, 10, 18, 10], 'vram.allocatedMb': [7900], 'vram.availableMb': [292], 'vram.d3dDedicatedMb': [7000] },
+      fps: { source: 'displayed', series: [100, 100, 55, null], presented1PctLow: 48 },
+    });
+    return { log, wa };
+  }
+
+  it('renders coverage, time split with tiers, frame times, VRAM headroom and worst moments', () => {
+    const { log, wa } = richInputs();
+    const d = buildDigest({ log, stats: statsOf(log), events: [], windows: wa, guidance: [] });
+    expect(d.compact).toMatch(/Coverage: analyzed [\d.]+ min of gameplay out of [\d.]+ min/);
+    expect(d.compact).toMatch(/Time split \(gameplay only\): .*GPU-bound \d+% \[measured\]/);
+    expect(d.compact).toMatch(/CPU-bound \d+% \[measured\]/);
+    expect(d.full).toMatch(/1% low 48/);
+    expect(d.full).toMatch(/VRAM: D3D dedicated p95 .* of 8,?192 MB/);
+    expect(d.compact).toMatch(/Worst moments:/);
+  });
+
+  it('events carry their evidence tag', () => {
+    const { log, wa } = richInputs();
+    const e = { id: 'x', type: 'gpu-bound', severity: 'warn' as const, sentence: 'GPU-bound…', sampleCount: 2,
+      evidence: { tier: 'measured' as const, basis: ['b'] } };
+    const d = buildDigest({ log, stats: {}, events: [e], windows: wa, guidance: [] });
+    expect(d.compact).toContain('- [warn] [measured] GPU-bound…');
+  });
+
+  it('guidance renders as a missing-data block; absent when empty', () => {
+    const { log, wa } = richInputs();
+    const withG = buildDigest({ log, stats: {}, events: [], windows: wa,
+      guidance: [{ what: 'per-core CPU usage', how: 'enable it' }] });
+    expect(withG.compact).toMatch(/Missing data that would sharpen this:/);
+    const withoutG = buildDigest({ log, stats: {}, events: [], windows: wa, guidance: [] });
+    expect(withoutG.compact).not.toMatch(/Missing data/);
+  });
+
+  it('workload logs word the split without "gameplay"', () => {
+    const wa = makeWindowAnalysis([makeWindow(0, { limiter: 'cpu' })], { activityKind: 'workload' });
+    const d = buildDigest({ log: makeLog({}), stats: {}, events: [], windows: wa, guidance: [] });
+    expect(d.compact).not.toMatch(/gameplay/);
   });
 });
