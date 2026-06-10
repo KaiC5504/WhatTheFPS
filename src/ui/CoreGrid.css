@@ -1,0 +1,4 @@
+.core-grid__row--pinned td,
+.core-grid__row--pinned th {
+  color: var(--warn);
+}
