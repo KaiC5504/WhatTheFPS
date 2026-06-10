@@ -102,3 +102,79 @@ describe('normalize', () => {
     expect(Math.round(log.specs.ramMb! / 1024)).toBe(32); // 19440/60*100 = 32400
   });
 });
+
+describe('timesMs', () => {
+  it('is row-aligned, forward-filled, and survives midnight', () => {
+    const text =
+      'Date,Time,X [%]\n' +
+      '7.6.2026,23:59:58,50\n' +
+      '7.6.2026,,51\n' +          // unparsable time -> forward-filled
+      '8.6.2026,00:00:00,52\n' +
+      '8.6.2026,00:00:02,53\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.timesMs).toHaveLength(4);
+    expect(log.timesMs[1]).toBe(log.timesMs[0]);            // forward fill
+    expect(log.timesMs[2]).toBeGreaterThan(log.timesMs[0]); // midnight handled, monotonic
+    expect(log.timesMs[3] - log.timesMs[2]).toBe(2000);
+  });
+});
+
+describe('core matrix', () => {
+  it('captures Intel hybrid and AMD per-thread usage/effective-clock columns', () => {
+    const text =
+      'Date,Time,"P-core 0 T0 Usage [%]","E-core 6 T0 Usage [%]","Core 3 T1 Effective Clock [MHz]"\n' +
+      '9.6.2026,12:00:00.000,40,60,3000\n' +
+      '9.6.2026,12:00:02.000,97,30,3100\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.cores).not.toBeNull();
+    expect(log.cores!.usage.map((s) => s.label)).toEqual(['P-core 0 T0', 'E-core 6 T0']);
+    expect(log.cores!.usage[0].coreType).toBe('P');
+    expect(log.cores!.usage[1].coreType).toBe('E');
+    expect(log.cores!.effectiveClock[0]).toMatchObject({ coreType: 'std', coreIndex: 3, thread: 1 });
+    expect(log.unknownColumns.some((c) => c.includes('P-core 0 T0 Usage'))).toBe(false);
+  });
+
+  it('derives cpu.usageCoreMax from the matrix when the column is absent', () => {
+    const text =
+      'Date,Time,"P-core 0 T0 Usage [%]","E-core 6 T0 Usage [%]"\n' +
+      '9.6.2026,12:00:00.000,40,60\n' +
+      '9.6.2026,12:00:02.000,97,30\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.sensors['cpu.usageCoreMax']?.values).toEqual([60, 97]);
+    expect(log.sensors['cpu.usageCoreMax']?.label).toContain('derived');
+  });
+});
+
+describe('ambiguity for new keys', () => {
+  it('drops iGPU-section VRAM and throttle-reason flags, keeps dGPU-section ones', () => {
+    // dGPU block (Hot Spot anchor) then iGPU block (GPU Utilization anchor); the
+    // VRAM/flag columns appear in both.
+    const text =
+      'Date,Time,"GPU Memory Allocated [MB]","Throttle Reason - Power [Yes/No]",' +
+      '"GPU Hot Spot Temperature [°C]","GPU Utilization [%]",' +
+      '"GPU Memory Allocated [MB]","Throttle Reason - Power [Yes/No]"\n' +
+      '9.6.2026,12:00:00.000,4000,No,80,30,2000,Yes\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.sensors['vram.allocatedMb']).toBeDefined();   // dGPU instance claimed
+    expect(log.sensors['vram.allocatedMb']!.values).toEqual([4000]);
+    expect(log.flags['flag.gpu.perfLimitPower']).toBeDefined();
+    expect(log.unknownColumns.filter((c) => c.includes('GPU Memory Allocated'))).toHaveLength(1);
+  });
+});
+
+describe('sanitizers', () => {
+  it('treats RTSS Frame Time 0 as missing', () => {
+    const text =
+      'Date,Time,"Frame Time [ms]"\n' +
+      '9.6.2026,12:00:00.000,0\n' +
+      '9.6.2026,12:00:02.000,8.3\n' +
+      '9.6.2026,12:00:04.000,0\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.sensors['rtss.frameTimeMs']?.values).toEqual([null, 8.3, null]);
+  });
+});

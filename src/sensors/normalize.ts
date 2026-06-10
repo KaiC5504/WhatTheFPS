@@ -1,6 +1,6 @@
 import type {
   ColumnMeta, Decimal, NormalizedLog, NumericSensor, FlagSensor,
-  CanonicalKey, FlagKey, FpsData,
+  CanonicalKey, FlagKey, FpsData, CoreThreadSeries,
 } from '../types';
 import { findSensor } from './registry';
 import { inferSpecs } from './fingerprint';
@@ -16,11 +16,20 @@ const DGPU_ANCHOR = /(12VHPWR|Memory Junction Temperature|Hot Spot Temperature)/
 const IGPU_ANCHOR = /(VDDCR_GFX|iGPU VID|STAPM|GPU Core Temperature|GPU Total Usage|GPU Utilization)/i;
 
 // Keys that can legitimately appear in both the discrete and integrated GPU blocks.
-const AMBIGUOUS = new Set<CanonicalKey>(['gpu.temp', 'gpu.clock', 'gpu.clockEff', 'gpu.usage', 'gpu.memUsagePct']);
+const AMBIGUOUS = new Set<CanonicalKey>([
+  'gpu.temp', 'gpu.clock', 'gpu.clockEff', 'gpu.usage', 'gpu.memUsagePct',
+  'vram.allocatedMb', 'vram.availableMb', 'vram.d3dDedicatedMb', 'vram.d3dDynamicMb',
+]);
+// AMD APUs put 'Throttle Reason - *' in the iGPU block; an all-AMD rig puts them on the dGPU.
+const AMBIGUOUS_FLAGS = new Set<FlagKey>([
+  'flag.gpu.perfLimitPower', 'flag.gpu.perfLimitThermal', 'flag.gpu.perfLimitCurrent',
+]);
 const IGPU_FORM: Partial<Record<CanonicalKey, CanonicalKey>> = {
   'gpu.temp': 'igpu.temp',
   'gpu.usage': 'igpu.usage',
 };
+
+const CORE_RE = /^(?:(P-core|E-core)|Core)\s+(\d+)\s+T(\d+)\s+(Usage|Effective Clock)$/i;
 
 function parseNumeric(raw: string, decimal: Decimal): number | null {
   const s = raw.trim();
@@ -51,6 +60,25 @@ function median(nums: number[]): number {
 function nearestAnchorDistance(index: number, anchors: number[]): number {
   if (anchors.length === 0) return Infinity;
   return Math.min(...anchors.map((a) => Math.abs(a - index)));
+}
+
+function buildTimesMs(rows: string[][], timeIdx: number): number[] {
+  const out: number[] = new Array(rows.length);
+  let offset = 0;
+  let prevOut = 0;
+  let seenAny = false;
+  for (let i = 0; i < rows.length; i++) {
+    const t = timeToMs(rows[i]?.[timeIdx] ?? '');
+    if (t === null) {
+      out[i] = prevOut;
+      continue;
+    }
+    if (seenAny && t + offset < prevOut) offset += 24 * 60 * 60 * 1000; // crossed midnight
+    prevOut = t + offset;
+    out[i] = prevOut;
+    seenAny = true;
+  }
+  return out;
 }
 
 // Installed RAM isn't in the trailer, but Used + Available sums to the physical total.
@@ -91,6 +119,8 @@ export function normalize(columns: ColumnMeta[], rows: string[][], decimal: Deci
 
   const sensors: Partial<Record<CanonicalKey, NumericSensor>> = {};
   const flags: Partial<Record<FlagKey, FlagSensor>> = {};
+  const coreUsage: CoreThreadSeries[] = [];
+  const coreEffClock: CoreThreadSeries[] = [];
   const unknownColumns: string[] = [];
   const claimed = new Set<CanonicalKey | FlagKey>();
   const timeIdx = columns.find((c) => c.name.toLowerCase() === 'time')?.index ?? 1;
@@ -99,6 +129,20 @@ export function normalize(columns: ColumnMeta[], rows: string[][], decimal: Deci
     const lname = col.name.toLowerCase();
     if (lname === 'date' || lname === 'time') continue;
 
+    const coreMatch = CORE_RE.exec(col.name);
+    if (coreMatch) {
+      const [, hybrid, core, thread, kind] = coreMatch;
+      const series: CoreThreadSeries = {
+        label: `${hybrid ?? 'Core'} ${core} T${thread}`,
+        coreType: hybrid ? (hybrid.toUpperCase().startsWith('P') ? 'P' : 'E') : 'std',
+        coreIndex: Number(core),
+        thread: Number(thread),
+        values: rows.map((r) => parseNumeric(r[col.index] ?? '', decimal)),
+      };
+      (kind.toLowerCase() === 'usage' ? coreUsage : coreEffClock).push(series);
+      continue;
+    }
+
     const def = findSensor(col.name);
     if (!def) {
       unknownColumns.push(col.raw);
@@ -106,13 +150,16 @@ export function normalize(columns: ColumnMeta[], rows: string[][], decimal: Deci
     }
 
     let key: CanonicalKey | FlagKey = def.key;
-    if (def.kind === 'numeric' && AMBIGUOUS.has(def.key as CanonicalKey)) {
+    const ambiguous = def.kind === 'numeric'
+      ? AMBIGUOUS.has(def.key as CanonicalKey)
+      : AMBIGUOUS_FLAGS.has(def.key as FlagKey);
+    if (ambiguous) {
       const dDist = nearestAnchorDistance(col.index, dgpuAnchors);
       const iDist = nearestAnchorDistance(col.index, igpuAnchors);
       if (iDist < dDist) {
-        const igpuForm = IGPU_FORM[def.key as CanonicalKey];
-        // An iGPU-section sensor with no canonical iGPU slot (e.g. iGPU clock) is
-        // dropped rather than claiming the discrete-GPU key and shadowing it.
+        const igpuForm = def.kind === 'numeric' ? IGPU_FORM[def.key as CanonicalKey] : undefined;
+        // An iGPU-section sensor/flag with no canonical iGPU slot is dropped rather
+        // than claiming the discrete-GPU key and shadowing it.
         if (!igpuForm) {
           unknownColumns.push(col.raw);
           continue;
@@ -129,19 +176,32 @@ export function normalize(columns: ColumnMeta[], rows: string[][], decimal: Deci
       const values = rows.map((r) => parseFlag(r[col.index] ?? ''));
       flags[key as FlagKey] = { key: key as FlagKey, label: def.label, values };
     } else {
-      const values = rows.map((r) => parseNumeric(r[col.index] ?? '', decimal));
+      let values = rows.map((r) => parseNumeric(r[col.index] ?? '', decimal));
+      // RTSS logs 0 when its stats server isn't armed — that's "missing", not "0 ms".
+      if (key === 'rtss.frameTimeMs') values = values.map((v) => (v === 0 ? null : v));
       sensors[key as CanonicalKey] = { key: key as CanonicalKey, label: def.label, unit: def.unit, values };
     }
   }
 
-  const times = rows.map((r) => timeToMs(r[timeIdx] ?? '')).filter((t): t is number => t !== null);
+  const timesMs = buildTimesMs(rows, timeIdx);
   const deltas: number[] = [];
-  for (let i = 1; i < times.length; i++) {
-    let d = times[i] - times[i - 1];
-    if (d < 0) d += 24 * 60 * 60 * 1000; // crossed midnight
+  for (let i = 1; i < timesMs.length; i++) {
+    const d = timesMs[i] - timesMs[i - 1];
     if (d > 0) deltas.push(d);
   }
   const pollMs = deltas.length ? median(deltas) : 0;
+
+  if (!claimed.has('cpu.usageCoreMax') && coreUsage.length > 0) {
+    const values = rows.map((_, i) => {
+      let max: number | null = null;
+      for (const s of coreUsage) {
+        const v = s.values[i];
+        if (v !== null && (max === null || v > max)) max = v;
+      }
+      return max;
+    });
+    sensors['cpu.usageCoreMax'] = { key: 'cpu.usageCoreMax', label: 'Max CPU/Thread Usage (derived)', unit: '%', values };
+  }
 
   return {
     rowCount: rows.length,
@@ -154,7 +214,7 @@ export function normalize(columns: ColumnMeta[], rows: string[][], decimal: Deci
     flags,
     fps: { ...NONE_FPS },
     unknownColumns,
-    timesMs: [],
-    cores: null,
+    timesMs,
+    cores: coreUsage.length || coreEffClock.length ? { usage: coreUsage, effectiveClock: coreEffClock } : null,
   };
 }
