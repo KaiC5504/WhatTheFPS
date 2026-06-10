@@ -29,6 +29,35 @@ function readColumn(col: ColumnMeta | null, rows: string[][], decimal: Decimal):
   return out;
 }
 
+function parseCell(raw: string, decimal: Decimal): number | null {
+  const s = raw.trim();
+  if (s === '') return null;
+  const norm = decimal === ',' ? s.replace(/\./g, '').replace(',', '.') : s;
+  const n = Number(norm);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Row-aligned read with the same cleaning rules as clean(): artefacts become null.
+function readColumnAligned(col: ColumnMeta | null, rows: string[][], decimal: Decimal): (number | null)[] {
+  if (!col) return [];
+  return rows.map((r) => {
+    const v = parseCell(r[col.index] ?? '', decimal);
+    if (v === null) return null;
+    return v > 0 && v <= 1000 ? v : null;
+  });
+}
+
+// HWiNFO's PresentMon percentile columns are session-cumulative; the last finite
+// nonzero row is the session value.
+function lastFinitePositive(col: ColumnMeta | null, rows: string[][], decimal: Decimal): number | null {
+  if (!col) return null;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const v = parseCell(rows[i][col.index] ?? '', decimal);
+    if (v !== null && v > 0) return v;
+  }
+  return null;
+}
+
 // Drop logging artefacts: 0 (legacy column alternates 0->value) and implausible
 // wrong-process spikes (> 1000 FPS).
 function clean(values: number[]): number[] {
@@ -64,11 +93,16 @@ export function buildFps(columns: ColumnMeta[], rows: string[][], decimal: Decim
   const presentedAvg = avgOf(readColumn(presentedCol, rows, decimal));
   const displayedAvg = avgOf(readColumn(displayedCol, rows, decimal));
 
+  const find = (name: string) => columns.find((c) => c.name.toLowerCase() === name.toLowerCase()) ?? null;
+  const presented1PctLow = lastFinitePositive(find('Framerate Presented (1% low)'), rows, decimal);
+  const presented01PctLow = lastFinitePositive(find('Framerate Presented (0.1% low)'), rows, decimal);
+  const rtss1PctLow = lastFinitePositive(find('Framerate 1% Low'), rows, decimal);
+
   if (pick.source === 'none' || !pick.column) {
     return {
       source: 'none', sourceLabel: '', clean: [], stats: null,
       presentedAvg, displayedAvg, capped: false, capValue: null,
-      series: [], presented1PctLow: null, presented01PctLow: null, rtss1PctLow: null,
+      series: [], presented1PctLow, presented01PctLow, rtss1PctLow,
     };
   }
 
@@ -84,6 +118,9 @@ export function buildFps(columns: ColumnMeta[], rows: string[][], decimal: Decim
     displayedAvg,
     capped,
     capValue,
-    series: [], presented1PctLow: null, presented01PctLow: null, rtss1PctLow: null,
+    series: readColumnAligned(pick.column, rows, decimal),
+    presented1PctLow,
+    presented01PctLow,
+    rtss1PctLow,
   };
 }

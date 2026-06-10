@@ -114,4 +114,45 @@ describe('buildFps', () => {
     const r = buildFps(buildColumns(csv.headers), csv.rows, csv.decimal);
     expect(r.clean).toEqual([119.9, 141.6]);
   });
+
+  it('exposes a row-aligned series with artefacts nulled', () => {
+    const r = fps(
+      ['Date', 'Time', 'Framerate Displayed (avg) [FPS]'],
+      [
+        ['9.6.2026', '12:00:00.000', 120],
+        ['9.6.2026', '12:00:02.000', 0],
+        ['9.6.2026', '12:00:04.000', 'x'],
+        ['9.6.2026', '12:00:06.000', 1500],
+        ['9.6.2026', '12:00:08.000', 118],
+      ],
+    );
+    expect(r.series).toEqual([120, null, null, null, 118]);
+    expect(r.series).toHaveLength(5);
+  });
+
+  it('reads PresentMon cumulative lows from the last finite row and RTSS low with 0→null', () => {
+    const r = fps(
+      [
+        'Date', 'Time', 'Framerate Displayed (avg) [FPS]',
+        'Framerate Presented (1% low) [FPS]', 'Framerate Presented (0.1% low) [FPS]',
+        'Framerate 1% Low [FPS]',
+      ],
+      [
+        ['9.6.2026', '12:00:00.000', 100, 0, 0, 0],
+        ['9.6.2026', '12:00:02.000', 100, 55.2, 40, 0],
+        ['9.6.2026', '12:00:04.000', 100, 61.0, 44, 0],
+      ],
+    );
+    expect(r.presented1PctLow).toBe(61);
+    expect(r.presented01PctLow).toBe(44);
+    expect(r.rtss1PctLow).toBeNull();
+  });
+
+  it('series is empty when no framerate column exists', () => {
+    const r = fps(
+      ['Date', 'Time', 'GPU Temperature [°C]'],
+      [['9.6.2026', '12:00:00.000', 74]],
+    );
+    expect(r.series).toEqual([]);
+  });
 });
