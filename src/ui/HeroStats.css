@@ -50,7 +50,7 @@
 
 .hero-stats .stat-tile--warn::before {
   background: var(--warn);
-  box-shadow: 0 0 18px -4px var(--warn);
+  box-shadow: 0 0 10px var(--warn-glow);
 }
 .hero-stats .stat-tile--warn .stat-tile__value,
 .hero-stats .stat-tile--warn .stat-tile__status {
@@ -59,7 +59,7 @@
 
 .hero-stats .stat-tile--bad::before {
   background: var(--bad);
-  box-shadow: 0 0 18px -4px var(--bad);
+  box-shadow: 0 0 10px var(--bad-glow);
 }
 .hero-stats .stat-tile--bad .stat-tile__value,
 .hero-stats .stat-tile--bad .stat-tile__status {

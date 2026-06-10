@@ -1,6 +1,6 @@
-/* The hero is a frosted readout floating over two soft color blobs — the blur has
-   real color to refract instead of sitting on flat gray. Blobs use only sanctioned
-   hues: the blue accent plus the run's severity tint (warm = heat/warning only). */
+/* The hero is a frosted readout floating over one soft severity blob — the page
+   aurora already supplies the blue; the blob adds the run's verdict tint so the
+   glass refracts the call it's announcing (warm = heat/warning only). */
 .hero {
   position: relative;
   isolation: isolate;
@@ -24,15 +24,10 @@
   border-radius: 50%;
   filter: blur(64px);
 }
-.hero__blob--cool {
-  left: -6%;
-  background: var(--accent);
-  opacity: 0.22;
-}
 .hero__blob--signal {
   right: -4%;
   background: var(--signal, var(--accent));
-  opacity: 0.18;
+  opacity: 0.16;
 }
 .hero--good {
   --signal: var(--good);
@@ -108,16 +103,21 @@
 }
 
 .hero-verdict__metric {
+  font-family: var(--font-mono);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 .hero-verdict--good .hero-verdict__metric {
   color: var(--good);
+  text-shadow: 0 0 18px var(--good-glow);
 }
 .hero-verdict--warn .hero-verdict__metric {
   color: var(--warn);
+  text-shadow: 0 0 18px var(--warn-glow);
 }
 .hero-verdict--bad .hero-verdict__metric {
   color: var(--bad);
+  text-shadow: 0 0 18px var(--bad-glow);
 }
 
 @media (max-width: 560px) {

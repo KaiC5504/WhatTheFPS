@@ -34,7 +34,6 @@ export function HeroVerdict({ verdict }: { verdict: Verdict }): JSX.Element {
   return (
     <div className={cx('hero', `hero--${health}`)}>
       <div className="hero__ambient" aria-hidden="true">
-        <span className="hero__blob hero__blob--cool" />
         <span className="hero__blob hero__blob--signal" />
       </div>
       <GlassCard className={cx('hero-verdict', `hero-verdict--${health}`)}>
