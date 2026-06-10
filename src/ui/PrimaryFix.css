@@ -1,0 +1,17 @@
+.primary-fix {
+  padding: var(--s5);
+  border-left: 3px solid var(--border-strong);
+}
+.primary-fix--warn { border-left-color: var(--warn); }
+.primary-fix--bad { border-left-color: var(--bad); }
+.primary-fix--healthy { border-left-color: var(--good); }
+.primary-fix__title { margin-bottom: var(--s2); }
+.primary-fix__text {
+  font-size: var(--text-base);
+  color: var(--text);
+}
+.primary-fix__action {
+  margin-top: var(--s2);
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+}
