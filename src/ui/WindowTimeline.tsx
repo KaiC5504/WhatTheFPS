@@ -32,6 +32,29 @@ export function WindowTimeline({ result }: { result: AnalysisResult }): JSX.Elem
   const y = (fps: number) => SPARK_H - (fps / fpsMax) * (SPARK_H - 8);
   const polyline = fpsPoints.map((p) => `${p.cx.toFixed(1)},${y(p.fps).toFixed(1)}`).join(' ');
 
+  // Collapse consecutive windows that paint the same colour into one rect. On a long
+  // log a per-window strip degrades into a barcode (1px slivers + sub-pixel seams);
+  // merged runs read as solid limiter blocks instead.
+  type Band = { idx: number; fill: string; stroke: string; startMs: number; endMs: number; label: string; count: number };
+  const bands: Band[] = [];
+  for (const w of windows) {
+    const gameplay = w.activity === 'gameplay';
+    const fill = gameplay ? LIMITER_FILL[w.limiter] : 'transparent';
+    const stroke = gameplay ? 'none' : 'var(--border-strong)';
+    const prev = bands[bands.length - 1];
+    if (prev && prev.fill === fill && prev.stroke === stroke) {
+      prev.endMs = w.window.endMs;
+      prev.count += 1;
+    } else {
+      bands.push({
+        idx: w.window.index, fill, stroke,
+        startMs: w.window.startMs, endMs: w.window.endMs,
+        label: gameplay ? `${w.activity} / ${w.limiter}` : w.activity,
+        count: 1,
+      });
+    }
+  }
+
   return (
     <Card className="nerd-card">
       <h3 className="nerd-h">Session timeline</h3>
@@ -40,17 +63,17 @@ export function WindowTimeline({ result }: { result: AnalysisResult }): JSX.Elem
         {fpsPoints.length >= 2 && (
           <polyline points={polyline} fill="none" stroke="var(--text)" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
         )}
-        {windows.map((w) => (
+        {bands.map((b) => (
           <rect
-            key={w.window.index}
-            x={x(w.window.startMs)}
+            key={b.idx}
+            x={x(b.startMs)}
             y={SPARK_H + 8}
-            width={Math.max(x(w.window.endMs) - x(w.window.startMs), 1)}
+            width={Math.max(x(b.endMs) - x(b.startMs), 1)}
             height={BAND_H}
-            fill={w.activity === 'gameplay' ? LIMITER_FILL[w.limiter] : 'transparent'}
-            stroke={w.activity === 'gameplay' ? 'none' : 'var(--border-strong)'}
+            fill={b.fill}
+            stroke={b.stroke}
           >
-            <title>{`window ${w.window.index}: ${w.activity}${w.activity === 'gameplay' ? ` / ${w.limiter}` : ''}`}</title>
+            <title>{b.count > 1 ? `${b.label} · ${b.count} windows` : b.label}</title>
           </rect>
         ))}
       </svg>
