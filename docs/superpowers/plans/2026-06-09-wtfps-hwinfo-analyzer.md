@@ -601,12 +601,21 @@ UI tests use `environment: 'jsdom'` (add a `// @vitest-environment jsdom` header
 
 ## v2 Roadmap (next plans, post-v1)
 
-Each becomes its own brainstorm → spec → plan cycle. Priority order:
+Each becomes its own brainstorm → spec → plan cycle. **Re-shaped 2026-06-10** (session history
+folded into #1; share link / Tauri / live-tail demoted to stretch). Priority order:
 
-1. **Before/after comparison** — named baselines in localStorage; opt-in compare toggle + baseline picker; plain-language diff engine ("avg GPU temp −6°C, avg FPS −2, throttle 12→0"); compare-aware digest; mismatch guardrails.
-2. **Interactive timelines & windowing** — uPlot timelines with event markers; brush-to-select a window and recompute stats; auto-segment idle/load/benchmark phases.
+1. **Before/after comparison + lightweight session history** — auto-saved runs in localStorage
+   (named/timestamped/deletable, 20-run cap); pick any two; plain-language diff engine
+   ("avg GPU temp −6°C, avg FPS +2, throttle 12→0"); tiered diff (Easy side-by-side hero deltas /
+   Nerd full delta table); stacked BEFORE/AFTER compare digest; warn-but-allow mismatch guardrails.
+   → Design spec: [`specs/2026-06-10-wtfps-before-after-compare-design.md`](../specs/2026-06-10-wtfps-before-after-compare-design.md).
+   *(Originally items #1 + #6; merged because both rest on one localStorage "saved run" foundation.)*
+2. **Interactive timelines & windowing** — uPlot timelines with event markers; brush-to-select a window and recompute stats; auto-segment idle/load/benchmark phases. (Needs raw samples — does not read from saved runs, which only hold summary stats.)
 3. **Deeper diagnostics** — frame-pacing/micro-stutter (frame-time variance, GPU-busy vs CPU-busy, animation error); VRM/mem-junction/drive temps; fan-vs-temp; per-core detail; confidence levels.
 4. **Specs & normalization breadth** — optional HWiNFO report-file parsing; broaden the registry (desktop Ryzen/Intel, Radeon dGPU, Arc); small reference DB of expected temp ranges.
-5. **Digest & sharing** — goal presets; multiple LLM output profiles; local HTML/PNG report card; privacy-preserving share link (compact digest encoded in URL).
-6. **Session history** — named, timestamped local history; reopen/compare any two past runs.
-7. **Packaging & platform** — Tauri Windows app; PWA/offline; full a11y pass. Stretch: live mode tailing a running HWiNFO CSV.
+5. **Digest & profiles** — goal presets; multiple LLM output profiles; local HTML/PNG report card.
+6. **Packaging & a11y** — PWA/offline; full a11y pass.
+
+**Stretch / maybe-later:** Tauri Windows app · live mode tailing a running HWiNFO CSV ·
+privacy-preserving share link (compact digest encoded in URL). Richer history management (search,
+tags, pinning, bulk ops) is a later polish pass on item #1.
