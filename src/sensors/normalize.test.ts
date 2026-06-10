@@ -56,6 +56,7 @@ describe('normalize', () => {
     expect(log.fps).toEqual({
       source: 'none', sourceLabel: '', clean: [], stats: null,
       presentedAvg: null, displayedAvg: null, capped: false, capValue: null,
+      series: [], presented1PctLow: null, presented01PctLow: null, rtss1PctLow: null,
     });
   });
 

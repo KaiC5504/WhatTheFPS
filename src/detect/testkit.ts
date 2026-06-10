@@ -17,7 +17,9 @@ export function makeLog(over: {
     pollMs: over.pollMs ?? 2000,
     specs: { systemModel: null, cpuVendor: 'unknown', cpuModelGuess: null, gpuVendor: 'unknown', gpuModelGuess: null, igpuModelGuess: null, igpuPresent: false, isLaptop: false, ramMb: null, ramModelGuess: null, ramModules: null },
     sensors, flags,
-    fps: { source: 'none', sourceLabel: '', clean: [], stats: null, presentedAvg: null, displayedAvg: null, capped: false, capValue: null, ...over.fps },
+    fps: { source: 'none', sourceLabel: '', clean: [], stats: null, presentedAvg: null, displayedAvg: null, capped: false, capValue: null, series: [], presented1PctLow: null, presented01PctLow: null, rtss1PctLow: null, ...over.fps },
     unknownColumns: [],
+    timesMs: [],
+    cores: null,
   };
 }

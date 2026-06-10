@@ -32,8 +32,14 @@ describe('types', () => {
         displayedAvg: null,
         capped: false,
         capValue: null,
+        series: [],
+        presented1PctLow: null,
+        presented01PctLow: null,
+        rtss1PctLow: null,
       },
       unknownColumns: [],
+      timesMs: [],
+      cores: null,
     };
     expect(log.pollMs).toBe(2000);
     expect(log.sensors['gpu.temp']!.values).toHaveLength(3);

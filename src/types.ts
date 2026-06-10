@@ -25,19 +25,40 @@ export type CanonicalKey =
   // discrete (gaming) GPU
   | 'gpu.temp' | 'gpu.hotspot' | 'gpu.memJunction' | 'gpu.usage'
   | 'gpu.clock' | 'gpu.clockEff' | 'gpu.power' | 'gpu.powerLimit' | 'gpu.memUsagePct'
+  | 'gpu.memControllerLoad'
   // integrated GPU (laptops)
   | 'igpu.temp' | 'igpu.usage'
   // memory
   | 'ram.loadPct' | 'ram.usedMb' | 'pagefile.usagePct'
+  // VRAM in absolute MB (dGPU section only; iGPU instances are dropped)
+  | 'vram.allocatedMb' | 'vram.availableMb' | 'vram.d3dDedicatedMb' | 'vram.d3dDynamicMb'
+  // PresentMon block (HWiNFO 7.63+) — per-interval ms aggregates
+  | 'pm.gpuBusyMs' | 'pm.gpuWaitMs' | 'pm.cpuBusyMs' | 'pm.cpuWaitMs' | 'pm.frameTimeMs'
+  // RTSS frametime (0 = not armed, sanitized to null at normalize time)
+  | 'rtss.frameTimeMs'
   // fps (filled via FpsData, not a plain series)
   ;
 
 export type FlagKey =
   | 'flag.cpu.thermalThrottle' | 'flag.cpu.prochot' | 'flag.cpu.ratl' | 'flag.cpu.powerLimit'
-  | 'flag.gpu.perfLimitPower' | 'flag.gpu.perfLimitThermal' | 'flag.gpu.perfLimitUtil';
+  | 'flag.gpu.perfLimitPower' | 'flag.gpu.perfLimitThermal' | 'flag.gpu.perfLimitUtil'
+  | 'flag.gpu.perfLimitVRel' | 'flag.gpu.perfLimitVOp' | 'flag.gpu.perfLimitCurrent';
 
 export interface NumericSensor { key: CanonicalKey; label: string; unit: string | null; values: (number | null)[]; }
 export interface FlagSensor { key: FlagKey; label: string; values: boolean[]; }
+
+export type CoreType = 'P' | 'E' | 'std';
+export interface CoreThreadSeries {
+  label: string;                  // e.g. 'P-core 0 T1', 'Core 7 T0'
+  coreType: CoreType;
+  coreIndex: number;
+  thread: number;
+  values: (number | null)[];      // row-aligned
+}
+export interface CoreMatrix {
+  usage: CoreThreadSeries[];
+  effectiveClock: CoreThreadSeries[];
+}
 
 export type CpuVendor = 'intel' | 'amd' | 'unknown';
 export type GpuVendor = 'nvidia' | 'amd' | 'intel' | 'unknown';
@@ -68,6 +89,10 @@ export interface FpsData {
   displayedAvg: number | null;
   capped: boolean;
   capValue: number | null;          // detected ceiling, when capped
+  series: (number | null)[];        // row-aligned, cleaned (0 / >1000 → null); [] when source==='none'
+  presented1PctLow: number | null;  // last finite value of the cumulative PresentMon column
+  presented01PctLow: number | null;
+  rtss1PctLow: number | null;       // RTSS 'Framerate 1% Low'; 0 means not armed → null
 }
 
 export interface NormalizedLog {
@@ -78,10 +103,74 @@ export interface NormalizedLog {
   flags: Partial<Record<FlagKey, FlagSensor>>;
   fps: FpsData;
   unknownColumns: string[];
+  timesMs: number[];                // row-aligned, monotonic (midnight-corrected), forward-filled
+  cores: CoreMatrix | null;
 }
 
 export type Severity = 'info' | 'warn' | 'bad';
-export interface DiagEvent { id: string; type: string; severity: Severity; sentence: string; fix?: string; sampleCount: number; }
+export interface DiagEvent {
+  id: string; type: string; severity: Severity; sentence: string; fix?: string; sampleCount: number;
+  evidence?: Evidence;
+  windowIndexes?: number[];
+}
+
+export type EvidenceTier = 'measured' | 'inferred';
+export interface SensorGuidance { what: string; how: string; }
+export interface Evidence { tier: EvidenceTier; basis: string[]; missing?: SensorGuidance[]; }
+
+export interface TimeWindow { index: number; startRow: number; endRow: number; startMs: number; endMs: number; }
+export type WindowActivity = 'gameplay' | 'idle' | 'loading' | 'unknown';
+export type Limiter = 'gpu' | 'cpu' | 'capped' | 'underutilized' | 'ambiguous' | 'unknown';
+
+export interface WindowMetrics {
+  fpsAvg: number | null;
+  fpsCoverage: number;              // fraction of window rows with a finite FPS sample
+  frameTimeMs: number | null;       // PresentMon preferred, RTSS fallback
+  frameTimeMaxMs: number | null;
+  gpuBusyMs: number | null;
+  cpuBusyMs: number | null;
+  gpuUsage: number | null;
+  cpuMaxThread: number | null;
+  cpuTotal: number | null;
+  gpuPowerW: number | null;
+  gpuPowerLimitW: number | null;
+  gpuClockEffMhz: number | null;
+  cpuClockEffMhz: number | null;
+  gpuTempC: number | null;
+  cpuTempC: number | null;
+  vramDedicatedMb: number | null;
+  vramDynamicMb: number | null;
+  ramLoadPct: number | null;
+  flagsFired: FlagKey[];            // flags with any true sample inside the window
+}
+
+export interface WindowClassification {
+  window: TimeWindow;
+  activity: WindowActivity;
+  limiter: Limiter;                 // 'unknown' for non-gameplay windows
+  tier: EvidenceTier | null;
+  basis: string[];
+  metrics: WindowMetrics;
+}
+
+export interface TimeSplit {
+  gameplayMs: number;
+  totalMs: number;
+  shares: Partial<Record<Limiter, number>>;  // fraction of gameplay time per limiter
+  dominant: Limiter | 'mixed' | null;        // null when no gameplay windows
+}
+
+export interface SnapshotEntry { label: string; value: string; unit: string | null; }
+export interface WorstMoment { classification: WindowClassification; fpsDropPct: number; snapshot: SnapshotEntry[]; }
+
+export interface WindowAnalysis {
+  windows: WindowClassification[];
+  timeSplit: TimeSplit;
+  worst: WorstMoment[];
+  windowMs: number;                 // actual window size used
+  lowConfidence: boolean;           // log too short for real windowing
+  activityKind: 'gameplay' | 'workload';  // 'workload' when no FPS was logged (benchmark logs)
+}
 
 export type Health = 'good' | 'warn' | 'bad';
 export type MascotMood = 'chill' | 'concerned' | 'panic';

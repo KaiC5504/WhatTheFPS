@@ -8,6 +8,7 @@ import { inferSpecs } from './fingerprint';
 const NONE_FPS: FpsData = {
   source: 'none', sourceLabel: '', clean: [], stats: null,
   presentedAvg: null, displayedAvg: null, capped: false, capValue: null,
+  series: [], presented1PctLow: null, presented01PctLow: null, rtss1PctLow: null,
 };
 
 // dGPU section markers (discrete Nvidia/Radeon) vs iGPU section markers (Intel/AMD APU).
@@ -153,5 +154,7 @@ export function normalize(columns: ColumnMeta[], rows: string[][], decimal: Deci
     flags,
     fps: { ...NONE_FPS },
     unknownColumns,
+    timesMs: [],
+    cores: null,
   };
 }

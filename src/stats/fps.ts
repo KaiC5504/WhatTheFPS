@@ -68,6 +68,7 @@ export function buildFps(columns: ColumnMeta[], rows: string[][], decimal: Decim
     return {
       source: 'none', sourceLabel: '', clean: [], stats: null,
       presentedAvg, displayedAvg, capped: false, capValue: null,
+      series: [], presented1PctLow: null, presented01PctLow: null, rtss1PctLow: null,
     };
   }
 
@@ -83,5 +84,6 @@ export function buildFps(columns: ColumnMeta[], rows: string[][], decimal: Decim
     displayedAvg,
     capped,
     capValue,
+    series: [], presented1PctLow: null, presented01PctLow: null, rtss1PctLow: null,
   };
 }
