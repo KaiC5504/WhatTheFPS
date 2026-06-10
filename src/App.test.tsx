@@ -3,16 +3,13 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// Drive the whole app off a real engine result, but bypass the worker by mocking
-// the analysis hook to report 'ready' immediately.
+// Drive the whole app off a deterministic fixture result, bypassing the worker by
+// mocking the analysis hook to report 'ready' immediately. The fixture exercises the
+// full mode-split UI (time-split, primary fix, evidence chain) which a tiny inline CSV
+// cannot produce through the real engine.
 vi.mock('./ui/useAnalysis', async () => {
-  const { analyze } = await import('./engine/analyze');
-  const csv = [
-    'Date,Time,"Total CPU Usage [%]","CPU Package [°C]","GPU Temperature [°C]","GPU Core Load [%]","Framerate Displayed (avg) [FPS]",',
-    '9.6.2026,12:00:00.000,45.0,70.0,75.0,99.0,120.0,',
-    '9.6.2026,12:00:02.000,55.0,72.0,77.0,98.0,118.0,',
-  ].join('\n');
-  const result = analyze(new TextEncoder().encode(csv));
+  const { fixtureResult } = await import('./ui/_fixtures');
+  const result = fixtureResult();
   return {
     useAnalysis: () => ({ status: 'ready', result, error: null, analyzeFile: vi.fn(), reset: vi.fn() }),
   };
@@ -21,21 +18,26 @@ vi.mock('./ui/useAnalysis', async () => {
 import { App } from './App';
 
 describe('App assembly', () => {
-  it('easy mode shows the verdict + digest; Nerd reveals the stats table and Easy hides it', async () => {
+  it('easy mode: verdict + bar + ONE fix, no findings list, no tables', () => {
+    render(<App />);
+
+    expect(screen.getByText('Avg FPS')).toBeInTheDocument();
+    expect(screen.getByText('Copy prompt for my LLM')).toBeInTheDocument();
+    expect(screen.getByText(/the one thing to try/i)).toBeInTheDocument();
+    expect(screen.getByText(/where the time went/i)).toBeInTheDocument();
+    expect(screen.queryByText('Per-sensor statistics')).toBeNull();
+    expect(screen.queryByText('Worst moments')).toBeNull();
+    expect(screen.queryByText('Session timeline')).toBeNull();
+  });
+
+  it('nerd mode: full findings with badges + evidence sections, no PrimaryFix', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    // Easy mode: hero stats + the signature digest panel are present…
-    expect(screen.getByText('Avg FPS')).toBeInTheDocument();
-    expect(screen.getByText('Copy prompt for my LLM')).toBeInTheDocument();
-    // …but the deep nerd table is not.
-    expect(screen.queryByText('Per-sensor statistics')).toBeNull();
-
     await user.click(screen.getByRole('tab', { name: 'Nerd' }));
     expect(screen.getByText('Per-sensor statistics')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', { name: 'Easy' }));
-    expect(screen.queryByText('Per-sensor statistics')).toBeNull();
+    expect(screen.getByText('Session timeline')).toBeInTheDocument();
+    expect(screen.queryByText(/the one thing to try/i)).toBeNull();
   });
 
   it('opens the specs settings overlay from the top bar and closes it with Done', async () => {

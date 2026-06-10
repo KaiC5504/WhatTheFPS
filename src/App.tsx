@@ -5,6 +5,9 @@ import { DropZone } from './ui/DropZone';
 import { HeroVerdict } from './ui/HeroVerdict';
 import { HeroStats } from './ui/HeroStats';
 import { FindingsList } from './ui/FindingsList';
+import { TimeSplitBar } from './ui/TimeSplitBar';
+import { PrimaryFix } from './ui/PrimaryFix';
+import { GuidanceCard } from './ui/GuidanceCard';
 import { DigestPanel } from './ui/DigestPanel';
 import { SpecsCard } from './ui/SpecsCard';
 import { NerdView } from './ui/NerdView';
@@ -125,12 +128,27 @@ function Results({
   onSpecsChange: (next: InferredSpecs) => void;
   onReset: () => void;
 }) {
+  const { verdict } = result;
   return (
     <div className="results stack">
-      <HeroVerdict verdict={result.verdict} />
-      <HeroStats hero={result.verdict.hero} />
+      <HeroVerdict verdict={verdict} />
+      <HeroStats hero={verdict.hero} />
 
-      <FindingsList findings={result.verdict.findings} />
+      {verdict.timeSplit && (
+        <TimeSplitBar split={verdict.timeSplit} activityKind={result.windows.activityKind} />
+      )}
+
+      {mode === 'easy' ? (
+        <>
+          <PrimaryFix fix={verdict.primaryFix} />
+          {verdict.timeSplit === null && <GuidanceCard guidance={verdict.guidance} />}
+        </>
+      ) : (
+        <>
+          <FindingsList findings={verdict.findings} showEvidence />
+          <GuidanceCard guidance={verdict.guidance} />
+        </>
+      )}
 
       <div className="results__cols">
         <DigestPanel result={result} specs={specs} />
