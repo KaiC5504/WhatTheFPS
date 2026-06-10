@@ -19,4 +19,15 @@ describe('Mascot', () => {
     const { container } = render(<Mascot mood="panic" />);
     expect(container.innerHTML).toContain('var(--bad)');
   });
+
+  it('renders the waveform mouth with the frame-drop dot in every mood', () => {
+    (['chill', 'concerned', 'panic'] as const).forEach((mood) => {
+      const { container, unmount } = render(<Mascot mood={mood} />);
+      const wave = container.querySelector('[data-part="waveform"]');
+      expect(wave, `waveform missing for ${mood}`).not.toBeNull();
+      expect(wave?.querySelector('polyline')).not.toBeNull();
+      expect(wave?.querySelector('circle[fill="#ff7a18"]')).not.toBeNull();
+      unmount();
+    });
+  });
 });
