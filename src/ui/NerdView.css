@@ -105,6 +105,20 @@
 .nerd-spark--timeline {
   height: 140px;
 }
+.wt-caption {
+  margin-top: var(--s2);
+  font-size: var(--text-xs);
+}
+/* downward triangle marker matching the in-chart worst-moment ticks */
+.nerd-legend .wt-legend-mark {
+  width: 0;
+  height: 0;
+  background: transparent;
+  border-radius: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid var(--bad);
+}
 .nerd-legend {
   display: flex;
   gap: var(--s5);
