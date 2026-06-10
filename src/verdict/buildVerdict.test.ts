@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeStats } from '../stats/percentiles';
-import { makeLog, makeWindowAnalysis } from '../causes/testkit';
+import { makeLog, makeWindow, makeWindowAnalysis } from '../causes/testkit';
 import { makeEvent } from '../causes/events';
 import { buildVerdict } from './buildVerdict';
 import type { CanonicalKey, Stats } from '../types';
@@ -82,3 +82,68 @@ describe('buildVerdict', () => {
 function log_with(sensors: Record<string, number[]>) {
   return makeLog({ sensors, fps: { source: 'displayed', stats: computeStats([100, 101, 99]) } });
 }
+
+describe('time-split headline', () => {
+  it('GPU-dominant', () => {
+    const wa = makeWindowAnalysis([0, 1, 2, 3].map((i) => makeWindow(i, { limiter: 'gpu', metrics: { fpsAvg: 100 } })));
+    const v = buildVerdict(makeLog({ fps: { source: 'displayed', series: [100] } }), {}, [], wa);
+    expect(v.headline).toMatch(/GPU-bound for 100% of gameplay/);
+  });
+  it('CPU-dominant names the processor', () => {
+    const wa = makeWindowAnalysis([0, 1, 2].map((i) => makeWindow(i, { limiter: 'cpu', metrics: { fpsAvg: 100 } })));
+    const v = buildVerdict(makeLog({ fps: { source: 'displayed', series: [100] } }), {}, [], wa);
+    expect(v.headline).toMatch(/CPU/);
+    expect(v.headline).toMatch(/100%/);
+  });
+  it('capped is reassuring', () => {
+    const wa = makeWindowAnalysis([0, 1, 2].map((i) => makeWindow(i, { limiter: 'capped', metrics: { fpsAvg: 120 } })));
+    const log = makeLog({ fps: { source: 'displayed', series: [120], capped: true, capValue: 120 } });
+    expect(buildVerdict(log, {}, [], wa).headline).toMatch(/capped at ~120/i);
+  });
+  it('mixed says the limit moves around', () => {
+    const wa = makeWindowAnalysis([
+      makeWindow(0, { limiter: 'gpu' }), makeWindow(1, { limiter: 'cpu' }), makeWindow(2, { limiter: 'ambiguous' }),
+    ]);
+    expect(buildVerdict(makeLog({ fps: { source: 'displayed', series: [1] } }), {}, [], wa).headline).toMatch(/mixed/i);
+  });
+  it('no gameplay + fps available → inconclusive wording, mascot concerned, guidance surfaced', () => {
+    const wa = makeWindowAnalysis([makeWindow(0, { activity: 'idle', limiter: 'unknown', tier: null })]);
+    const v = buildVerdict(makeLog({ fps: { source: 'displayed', series: [100] } }), {}, [], wa);
+    expect(v.headline).toMatch(/couldn.t pin down/i);
+    expect(v.guidance.length).toBeGreaterThan(0);
+  });
+  it('benchmark logs (workload) never say gameplay', () => {
+    const wa = makeWindowAnalysis([makeWindow(0, { limiter: 'cpu' }), makeWindow(1, { limiter: 'cpu' }), makeWindow(2, { limiter: 'cpu' })], { activityKind: 'workload' });
+    const v = buildVerdict(makeLog({}), {}, [], wa);
+    expect(v.headline.toLowerCase()).not.toContain('gameplay');
+  });
+});
+
+describe('primaryFix ladder', () => {
+  const ev = (type: string, severity: 'info' | 'warn' | 'bad' = 'warn') =>
+    ({ id: type, type, severity, sentence: `${type} happened`, fix: `fix ${type}`, sampleCount: 1 });
+
+  it('thermal collapse outranks everything', () => {
+    const wa = makeWindowAnalysis([makeWindow(0, { limiter: 'gpu' })]);
+    const v = buildVerdict(makeLog({}), {}, [ev('gpu-bound'), ev('thermal-collapse'), ev('vram-pressure')], wa);
+    expect(v.primaryFix?.text).toContain('thermal-collapse');
+  });
+  it('falls back to the dominant-limiter event, then worst severity', () => {
+    const wa = makeWindowAnalysis([0, 1, 2].map((i) => makeWindow(i, { limiter: 'cpu' })));
+    const v = buildVerdict(makeLog({}), {}, [ev('cpu-bottleneck'), ev('ram-pressure', 'info')], wa);
+    expect(v.primaryFix?.text).toContain('cpu-bottleneck');
+  });
+  it('null when there are no events', () => {
+    const v = buildVerdict(makeLog({}), {}, [], makeWindowAnalysis([]));
+    expect(v.primaryFix).toBeNull();
+  });
+});
+
+describe('coverage', () => {
+  it('reports gameplay vs total time', () => {
+    const wa = makeWindowAnalysis([makeWindow(0, { limiter: 'gpu' }), makeWindow(1, { activity: 'idle' })]);
+    const v = buildVerdict(makeLog({ fps: { source: 'displayed', series: [1] } }), {}, [], wa);
+    expect(v.coverage).not.toBeNull();
+    expect(v.coverage!.totalMs).toBeGreaterThan(v.coverage!.gameplayMs);
+  });
+});
