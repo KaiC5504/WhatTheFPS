@@ -1,12 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="WTFPS">
-  <rect width="512" height="512" rx="112" fill="#0b0d14"/>
-  <ellipse cx="212" cy="216" rx="46" ry="54" fill="#ffffff"/>
-  <ellipse cx="300" cy="216" rx="46" ry="54" fill="#ffffff"/>
-  <circle cx="216" cy="232" r="21" fill="#3b9eff"/>
-  <circle cx="304" cy="232" r="21" fill="#3b9eff"/>
-  <circle cx="200" cy="200" r="7" fill="#ffffff"/>
-  <circle cx="288" cy="200" r="7" fill="#ffffff"/>
-  <polyline points="116,360 156,360 190,344 226,374 256,300 286,374 322,344 360,360 396,360"
-            fill="none" stroke="#3b9eff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="256" cy="300" r="13" fill="#ff7a18"/>
+  <rect width="512" height="512" rx="112" fill="#1a1f2e"/>
+  <rect x="41" y="61" width="430" height="389" rx="72" fill="#0e1119"/>
+  <circle cx="256" cy="33" r="15" fill="#3b9eff"/>
+  <ellipse cx="174" cy="205" rx="61" ry="74" fill="#ffffff"/>
+  <ellipse cx="338" cy="205" rx="61" ry="74" fill="#ffffff"/>
+  <circle cx="179" cy="227" r="28" fill="#3b9eff"/>
+  <circle cx="343" cy="227" r="28" fill="#3b9eff"/>
+  <circle cx="168" cy="216" r="10" fill="#ffffff"/>
+  <circle cx="332" cy="216" r="10" fill="#ffffff"/>
+  <polyline points="82,358 133,358 174,340 215,374 256,307 297,374 338,340 379,358 430,358"
+            fill="none" stroke="#3b9eff" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="307" r="18" fill="#ff7a18"/>
 </svg>
