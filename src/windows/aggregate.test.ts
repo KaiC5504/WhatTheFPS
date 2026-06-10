@@ -72,4 +72,20 @@ describe('buildSnapshot', () => {
     expect(snap.find((e) => e.label === 'Flags fired')?.value).toContain('power limit');
     expect(snap.some((e) => e.label === 'VRAM dedicated')).toBe(false); // null → omitted
   });
+
+  it('drops the frame time when it contradicts the window FPS (wrong-process PresentMon)', () => {
+    const snap = buildSnapshot(metrics({ fpsAvg: 90, frameTimeMs: 20.5 }));
+    expect(snap).toContainEqual({ label: 'FPS', value: '90', unit: null });
+    expect(snap.some((e) => e.label === 'Frame time')).toBe(false);
+  });
+
+  it('keeps the frame time when no FPS is available to cross-check', () => {
+    const snap = buildSnapshot(metrics({ frameTimeMs: 20.5 }));
+    expect(snap).toContainEqual({ label: 'Frame time', value: '20.5', unit: 'ms' });
+  });
+
+  it('words the utilization-limit flag in plain language', () => {
+    const snap = buildSnapshot(metrics({ flagsFired: ['flag.gpu.perfLimitUtil'] }));
+    expect(snap.find((e) => e.label === 'Flags fired')?.value).toBe('GPU underutilized (waiting on CPU)');
+  });
 });

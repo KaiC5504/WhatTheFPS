@@ -66,6 +66,19 @@ describe('findSensor', () => {
     expect(key('GPU D3D Memory Dynamic')).toBe('vram.d3dDynamicMb');
     expect(key('GPU Memory Controller Load')).toBe('gpu.memControllerLoad');
   });
+  it('maps fan and core-voltage columns', () => {
+    expect(key('GPU Core Voltage')).toBe('gpu.coreVoltage');
+    expect(key('Core VIDs (avg)')).toBe('cpu.coreVoltage');
+    expect(key('CPU VDDCR_VDD Voltage (SVI3 TFN)')).toBe('cpu.coreVoltage');
+    expect(key('CPU Core Voltage (SVI2 TFN)')).toBe('cpu.coreVoltage');
+    expect(key('Vcore')).toBe('cpu.coreVoltage');
+    expect(key('CPU Fan')).toBe('fan.cpuRpm');
+    expect(key('GPU Fan')).toBe('fan.gpuRpm');
+    expect(key('GPU Fan1')).toBe('fan.gpuRpm');
+  });
+  it('does not map the AMD iGPU rail onto the discrete GPU voltage key', () => {
+    expect(key('GPU Core Voltage (VDDCR_GFX)')).toBeNull();
+  });
   it('maps the extra GPU limiter flags, AMD throttle reasons onto the same semantic keys', () => {
     expect(key('Performance Limit - Reliability Voltage')).toBe('flag.gpu.perfLimitVRel');
     expect(key('Performance Limit - Max Operating Voltage')).toBe('flag.gpu.perfLimitVOp');

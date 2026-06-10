@@ -72,6 +72,20 @@ const DEFS: SensorDef[] = [
   { key: 'gpu.power', domain: 'gpu', kind: 'numeric', label: 'GPU Power', unit: 'W',
     match: eq('GPU Power') },
 
+  // discrete GPU voltage — the AMD APU rail 'GPU Core Voltage (VDDCR_GFX)' is deliberately
+  // NOT matched: it's the iGPU and would shadow the dGPU value on hybrid laptops
+  { key: 'gpu.coreVoltage', domain: 'gpu', kind: 'numeric', label: 'GPU Core Voltage', unit: 'V',
+    match: eq('GPU Core Voltage') },
+  // CPU core voltage across Intel VID / AMD SVI2-SVI3 / motherboard Vcore wording
+  { key: 'cpu.coreVoltage', domain: 'cpu', kind: 'numeric', label: 'CPU Core Voltage', unit: 'V',
+    match: eq('Core VIDs (avg)', 'CPU VDDCR_VDD Voltage (SVI3 TFN)', 'CPU Core Voltage (SVI2 TFN)', 'Vcore') },
+
+  // fans (motherboard/EC and GPU blocks)
+  { key: 'fan.cpuRpm', domain: 'cpu', kind: 'numeric', label: 'CPU Fan', unit: 'RPM',
+    match: eq('CPU Fan', 'CPU Fan Speed') },
+  { key: 'fan.gpuRpm', domain: 'gpu', kind: 'numeric', label: 'GPU Fan', unit: 'RPM',
+    match: eq('GPU Fan', 'GPU Fan1', 'GPU Fan 1', 'GPU Fan Speed') },
+
   // VRAM in MB — these names exist in both dGPU and iGPU blocks; normalize disambiguates
   { key: 'vram.allocatedMb', domain: 'gpu', kind: 'numeric', label: 'GPU Memory Allocated', unit: 'MB',
     match: eq('GPU Memory Allocated') },

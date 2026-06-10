@@ -30,5 +30,17 @@ export function buildGuidance(log: NormalizedLog): SensorGuidance[] {
       how: 'Keep HWiNFO’s per-core usage sensors enabled so single-thread limits can be pinpointed.',
     });
   }
+  if (!log.sensors['fan.cpuRpm'] && !log.sensors['fan.gpuRpm']) {
+    out.push({
+      what: 'fan speeds',
+      how: 'Include the CPU/GPU fan RPM sensors (motherboard/EC and GPU sections) in the log — they tell whether cooling has headroom or is already maxed.',
+    });
+  }
+  if (!log.sensors['gpu.coreVoltage']) {
+    out.push({
+      what: 'GPU core voltage',
+      how: 'Include the GPU Core Voltage sensor in the log — it shows how much undervolting headroom the GPU has.',
+    });
+  }
   return out;
 }

@@ -23,6 +23,8 @@ Sensors:
 - GPU mem junction: avg 70.7 °C, p95 74 °C, p99 74 °C, max 74 °C
 - GPU power: avg 73.9 W, p95 87.6 W, p99 90.4 W, max 91.0 W
 - CPU power: avg 19.7 W, p95 22.8 W, p99 27.6 W, max 27.7 W
+- GPU core voltage: avg 0.874 V, p95 0.875 V, p99 0.875 V, max 0.875 V
+- CPU core voltage: avg 1.147 V, p95 1.205 V, p99 1.210 V, max 1.211 V
 - GPU mem usage: avg 44.9%, 1% low 12.4%, 5% low 12.5%
 - RAM load: avg 36.1%, 1% low 27.5%, 5% low 27.6%
 - CPU core usage (max): avg 77.2%, 1% low 31.3%, 5% low 42.3%
@@ -31,16 +33,22 @@ Sensors:
 
 Coverage: analyzed 2.7 min of gameplay out of 2.7 min logged (8 s windows)
 Time split (gameplay only): ambiguous 67% [measured], CPU-bound 17% [measured], GPU-bound 8% [measured], GPU-underutilized 8% [measured]
-Frame times (PresentMon): avg 56.1 ms, p99 1592.4 ms, 1% low 4.1 FPS
+Frame times (PresentMon): avg 56.1 ms, p99 1592.4 ms; session-wide per-frame 1% low 4.1 FPS (cumulative — includes loading/menus)
 
 Worst moments:
-- +0m08s: −95% vs median (CPU-bound) — FPS 2, Frame time 876.5 ms, GPU busy 11.3 ms, GPU usage 3 %, GPU power 22 W, GPU temp 57 °C, Max CPU thread 73 %, Total CPU 20 %, RAM load 34 %, Flags fired GPU utilization limit [inferred]
+- +0m08s: −95% vs median (CPU-bound) — FPS 2, GPU busy 11.3 ms, GPU usage 3 %, GPU power 22 W, GPU temp 57 °C, Max CPU thread 73 %, Total CPU 20 %, RAM load 34 %, Flags fired GPU underutilized (waiting on CPU) [inferred]
 
 Detected events:
 - [info] [measured] The CPU held the GPU back for 17% of gameplay — the GPU sat idle waiting for frames.
+- Checked, not detected: CPU thermal throttle, CPU PROCHOT, CPU RATL, CPU power limit, GPU thermal limit, GPU power limit, GPU reliability voltage limit, GPU max voltage limit
 
 Missing data that would sharpen this:
 - finer polling (this log is ~2002 ms per sample) — Set the HWiNFO logging interval to 500–1000 ms for diagnosis runs.
+- fan speeds — Include the CPU/GPU fan RPM sensors (motherboard/EC and GPU sections) in the log — they tell whether cooling has headroom or is already maxed.
+
+Context (fill in for better advice):
+- Game, settings & resolution:
+- Power profile & cooling (performance mode, cooling pad, plugged in):
 
 Goal: help me lower temps without losing FPS"
 `;

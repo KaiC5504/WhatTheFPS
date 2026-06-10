@@ -36,6 +36,8 @@ export type CanonicalKey =
   | 'pm.gpuBusyMs' | 'pm.gpuWaitMs' | 'pm.cpuBusyMs' | 'pm.cpuWaitMs' | 'pm.frameTimeMs'
   // RTSS frametime (0 = not armed, sanitized to null at normalize time)
   | 'rtss.frameTimeMs'
+  // core voltages (undervolt headroom) and fan speeds (cooling headroom)
+  | 'gpu.coreVoltage' | 'cpu.coreVoltage' | 'fan.cpuRpm' | 'fan.gpuRpm'
   // fps (filled via FpsData, not a plain series)
   ;
 

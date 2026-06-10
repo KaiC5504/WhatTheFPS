@@ -1,8 +1,9 @@
 import type {
-  NormalizedLog, CanonicalKey, Stats, DiagEvent,
+  NormalizedLog, CanonicalKey, FlagKey, Stats, DiagEvent,
   Digest, DigestMode, InferredSpecs,
   WindowAnalysis, SensorGuidance, Limiter, EvidenceTier,
 } from '../types';
+import { FLAG_LABELS } from '../windows/snapshot';
 
 const DEFAULT_GOAL = 'help me lower temps without losing FPS';
 
@@ -15,6 +16,7 @@ interface SensorLine {
   label: string;
   unit: string;
   kind: 'level' | 'usage'; // level → avg/p95/p99/max; usage → avg/p1/p5 lows
+  digits?: number;         // fixed decimal places (voltages need mV precision)
 }
 
 // Compact set: the sensors a tuning conversation usually needs first.
@@ -24,6 +26,8 @@ const COMPACT_SENSORS: SensorLine[] = [
   { key: 'gpu.temp', label: 'GPU temp', unit: '°C', kind: 'level' },
   { key: 'gpu.hotspot', label: 'GPU hotspot', unit: '°C', kind: 'level' },
   { key: 'gpu.clock', label: 'GPU clock', unit: 'MHz', kind: 'level' },
+  { key: 'fan.cpuRpm', label: 'CPU fan', unit: 'RPM', kind: 'level', digits: 0 },
+  { key: 'fan.gpuRpm', label: 'GPU fan', unit: 'RPM', kind: 'level', digits: 0 },
   { key: 'cpu.usageTotal', label: 'CPU usage', unit: '%', kind: 'usage' },
   { key: 'gpu.usage', label: 'GPU usage', unit: '%', kind: 'usage' },
 ];
@@ -34,6 +38,8 @@ const FULL_EXTRA_SENSORS: SensorLine[] = [
   { key: 'gpu.memJunction', label: 'GPU mem junction', unit: '°C', kind: 'level' },
   { key: 'gpu.power', label: 'GPU power', unit: 'W', kind: 'level' },
   { key: 'cpu.power', label: 'CPU power', unit: 'W', kind: 'level' },
+  { key: 'gpu.coreVoltage', label: 'GPU core voltage', unit: 'V', kind: 'level', digits: 3 },
+  { key: 'cpu.coreVoltage', label: 'CPU core voltage', unit: 'V', kind: 'level', digits: 3 },
   { key: 'gpu.memUsagePct', label: 'GPU mem usage', unit: '%', kind: 'usage' },
   { key: 'ram.loadPct', label: 'RAM load', unit: '%', kind: 'usage' },
   { key: 'cpu.usageCoreMax', label: 'CPU core usage (max)', unit: '%', kind: 'usage' },
@@ -43,10 +49,11 @@ function sensorLine(def: SensorLine, stats: Partial<Record<CanonicalKey, Stats>>
   const s = stats[def.key];
   if (!s || s.count === 0) return null;
   const u = def.unit === '%' ? '%' : ` ${def.unit}`;
+  const f = (x: number) => (def.digits !== undefined ? x.toFixed(def.digits) : n(x));
   if (def.kind === 'level') {
-    return `- ${def.label}: avg ${n(s.avg)}${u}, p95 ${n(s.p95)}${u}, p99 ${n(s.p99)}${u}, max ${n(s.max)}${u}`;
+    return `- ${def.label}: avg ${f(s.avg)}${u}, p95 ${f(s.p95)}${u}, p99 ${f(s.p99)}${u}, max ${f(s.max)}${u}`;
   }
-  return `- ${def.label}: avg ${n(s.avg)}${u}, 1% low ${n(s.p1Low)}${u}, 5% low ${n(s.p5Low)}${u}`;
+  return `- ${def.label}: avg ${f(s.avg)}${u}, 1% low ${f(s.p1Low)}${u}, 5% low ${f(s.p5Low)}${u}`;
 }
 
 function fpsLine(log: NormalizedLog): string {
@@ -74,10 +81,34 @@ function specsBlock(specs: InferredSpecs): string {
   return lines.join('\n');
 }
 
-function eventsBlock(events: DiagEvent[]): string {
-  if (events.length === 0) return 'Detected events:\n- none — nothing notable flagged.';
-  const lines = events.map((e) => `- [${e.severity}]${e.evidence ? ` ${TIER_TAG[e.evidence.tier]}` : ''} ${e.sentence}`);
+// Health flags worth reporting as explicit negatives (perfLimitUtil is a limiter
+// classifier, not a health signal, so it stays out of this list).
+const NEGATIVE_FLAGS: FlagKey[] = [
+  'flag.cpu.thermalThrottle', 'flag.cpu.prochot', 'flag.cpu.ratl', 'flag.cpu.powerLimit',
+  'flag.gpu.perfLimitThermal', 'flag.gpu.perfLimitPower', 'flag.gpu.perfLimitCurrent',
+  'flag.gpu.perfLimitVRel', 'flag.gpu.perfLimitVOp',
+];
+
+function eventsBlock(events: DiagEvent[], log: NormalizedLog): string {
+  const lines = events.length === 0
+    ? ['- none — nothing notable flagged.']
+    : events.map((e) => `- [${e.severity}]${e.evidence ? ` ${TIER_TAG[e.evidence.tier]}` : ''} ${e.sentence}`);
+  // "Not detected" only counts when the flag was actually in the log; absent columns
+  // stay silent (the guidance block covers what wasn't logged).
+  const cleared = NEGATIVE_FLAGS
+    .filter((k) => log.flags[k] !== undefined && !log.flags[k]!.values.some(Boolean))
+    .map((k) => FLAG_LABELS[k]);
+  if (cleared.length > 0) lines.push(`- Checked, not detected: ${cleared.join(', ')}`);
   return ['Detected events:', ...lines].join('\n');
+}
+
+function contextBlock(log: NormalizedLog): string {
+  const lines = ['Context (fill in for better advice):', '- Game, settings & resolution:'];
+  if (log.fps.capped && log.fps.capValue !== null) {
+    lines.push(`- FPS cap source (in-game / RTSS / VSync): cap measured at ~${n(log.fps.capValue)} — intended?`);
+  }
+  lines.push('- Power profile & cooling (performance mode, cooling pad, plugged in):');
+  return lines.join('\n');
 }
 
 const TIER_TAG: Record<EvidenceTier, string> = { measured: '[measured]', inferred: '[inferred]' };
@@ -91,7 +122,18 @@ const mins = (ms: number) => (ms / 60_000).toFixed(1);
 function coverageLine(wa: WindowAnalysis): string | null {
   if (wa.timeSplit.gameplayMs <= 0) return null;
   const word = wa.activityKind === 'gameplay' ? 'gameplay' : 'active workload';
-  return `Coverage: analyzed ${mins(wa.timeSplit.gameplayMs)} min of ${word} out of ${mins(wa.timeSplit.totalMs)} min logged (${Math.round(wa.windowMs / 1000)} s windows${wa.lowConfidence ? ', low confidence — short log' : ''})`;
+  let line = `Coverage: analyzed ${mins(wa.timeSplit.gameplayMs)} min of ${word} out of ${mins(wa.timeSplit.totalMs)} min logged (${Math.round(wa.windowMs / 1000)} s windows${wa.lowConfidence ? ', low confidence — short log' : ''})`;
+  // When logging paused (sleep, HWiNFO paused), summed window time undershoots the
+  // wall-clock span and worst-moment offsets look like they exceed the log length.
+  const first = wa.windows[0], last = wa.windows[wa.windows.length - 1];
+  if (first && last) {
+    const spanMs = last.window.endMs - first.window.startMs;
+    const gapMs = spanMs - wa.timeSplit.totalMs;
+    if (gapMs > 60_000 && gapMs > 0.02 * spanMs) {
+      line += `; log spans ${mins(spanMs)} min wall-clock (~${mins(gapMs)} min of logging gaps) — time offsets count from log start`;
+    }
+  }
+  return line;
 }
 
 function timeSplitLine(wa: WindowAnalysis): string | null {
@@ -114,7 +156,9 @@ function frameTimesLine(log: NormalizedLog, stats: Partial<Record<CanonicalKey, 
   const ft = stats['pm.frameTimeMs'];
   if (!ft || ft.count === 0) return null;
   const low = log.fps.presented1PctLow;
-  return `Frame times (PresentMon): avg ${n(ft.avg)} ms, p99 ${n(ft.p99)} ms${low !== null ? `, 1% low ${n(low)} FPS` : ''}`;
+  // HWiNFO's PresentMon 1% low is cumulative over the whole session, so it can sit far
+  // below the windowed FPS lows — label it so an LLM doesn't build a stutter story on it.
+  return `Frame times (PresentMon): avg ${n(ft.avg)} ms, p99 ${n(ft.p99)} ms${low !== null ? `; session-wide per-frame 1% low ${n(low)} FPS (cumulative — includes loading/menus)` : ''}`;
 }
 
 function vramLine(log: NormalizedLog, stats: Partial<Record<CanonicalKey, Stats>>): string | null {
@@ -194,10 +238,13 @@ function render(
   if (worst) { parts.push(''); parts.push(worst); }
 
   parts.push('');
-  parts.push(eventsBlock(events));
+  parts.push(eventsBlock(events, log));
 
   const g = guidanceBlock(guidance);
   if (g) { parts.push(''); parts.push(g); }
+
+  parts.push('');
+  parts.push(contextBlock(log));
 
   parts.push('');
   parts.push(`Goal: ${goal}`);

@@ -1,13 +1,14 @@
 import type { FlagKey, SnapshotEntry, WindowMetrics } from '../types';
+import { PLAUSIBLE_FPS_MISMATCH } from './classify';
 
-const FLAG_LABELS: Record<FlagKey, string> = {
+export const FLAG_LABELS: Record<FlagKey, string> = {
   'flag.cpu.thermalThrottle': 'CPU thermal throttle',
   'flag.cpu.prochot': 'CPU PROCHOT',
   'flag.cpu.ratl': 'CPU RATL',
   'flag.cpu.powerLimit': 'CPU power limit',
   'flag.gpu.perfLimitPower': 'GPU power limit',
   'flag.gpu.perfLimitThermal': 'GPU thermal limit',
-  'flag.gpu.perfLimitUtil': 'GPU utilization limit',
+  'flag.gpu.perfLimitUtil': 'GPU underutilized (waiting on CPU)',
   'flag.gpu.perfLimitVRel': 'GPU reliability voltage limit',
   'flag.gpu.perfLimitVOp': 'GPU max voltage limit',
   'flag.gpu.perfLimitCurrent': 'GPU current limit',
@@ -20,8 +21,12 @@ export function buildSnapshot(m: WindowMetrics): SnapshotEntry[] {
     if (v === null) return;
     out.push({ label, value: digits ? v.toFixed(digits) : String(Math.round(v)), unit });
   };
+  // PresentMon can latch onto the wrong process; a frame time that contradicts the
+  // window's sampled FPS would just confuse the reader, so leave it out.
+  const ftImplausible = m.frameTimeMs !== null && m.fpsAvg !== null && m.fpsAvg > 0
+    && Math.abs(1000 / m.frameTimeMs - m.fpsAvg) / m.fpsAvg > PLAUSIBLE_FPS_MISMATCH;
   push('FPS', m.fpsAvg, null);
-  push('Frame time', m.frameTimeMs, 'ms', 1);
+  push('Frame time', ftImplausible ? null : m.frameTimeMs, 'ms', 1);
   push('GPU busy', m.gpuBusyMs, 'ms', 1);
   push('GPU usage', m.gpuUsage, '%');
   push('GPU power', m.gpuPowerW, 'W');

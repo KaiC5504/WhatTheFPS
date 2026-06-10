@@ -59,6 +59,10 @@ describe('buildDigest', () => {
       Detected events:
       - [warn] GPU averaged 96% usage.
 
+      Context (fill in for better advice):
+      - Game, settings & resolution:
+      - Power profile & cooling (performance mode, cooling pad, plugged in):
+
       Goal: help me lower temps without losing FPS"
     `);
   });
@@ -97,6 +101,22 @@ describe('buildDigest', () => {
     const d = buildDigest(sampleResult());
     expect(d.full.toLowerCase()).toContain('presented');
     expect(d.full.toLowerCase()).toContain('displayed');
+  });
+
+  it('renders fan speeds in compact and voltages in full with mV precision', () => {
+    const base = sampleResult();
+    const stats = { ...base.stats, ...statsFor({
+      'fan.cpuRpm': [3200, 3400, 3300, 3500, 3600],
+      'fan.gpuRpm': [2800, 2900, 2850, 2950, 3000],
+      'gpu.coreVoltage': [0.875, 0.9, 0.88, 0.92, 0.91],
+      'cpu.coreVoltage': [1.15, 1.2, 1.18, 1.22, 1.25],
+    }) };
+    const d = buildDigest({ ...base, stats });
+    expect(d.compact).toMatch(/CPU fan: avg \d+ RPM, p95 \d+ RPM, p99 \d+ RPM, max 3600 RPM/);
+    expect(d.compact).toMatch(/GPU fan: avg \d+ RPM.*max 3000 RPM/);
+    expect(d.full).toMatch(/GPU core voltage: avg 0\.897 V.*max 0\.920 V/);
+    expect(d.full).toMatch(/CPU core voltage: avg 1\.200 V/);
+    expect(d.compact).not.toMatch(/core voltage/);
   });
 
   it('renders "no framerate logged" when there is no FPS source', () => {
@@ -140,6 +160,27 @@ describe('evidence blocks', () => {
     expect(d.compact).toMatch(/Worst moments:/);
   });
 
+  it('labels the PresentMon 1% low as session-cumulative so it is not read as a windowed stat', () => {
+    const { log, wa } = richInputs();
+    const d = buildDigest({ log, stats: statsOf(log), events: [], windows: wa, guidance: [] });
+    expect(d.full).toContain('session-wide per-frame 1% low 48 FPS (cumulative — includes loading/menus)');
+  });
+
+  it('notes wall-clock span and logging gaps when windows do not cover the log', () => {
+    const wa = makeWindowAnalysis([
+      makeWindow(0, { limiter: 'gpu', metrics: { fpsAvg: 100 } }),
+      makeWindow(20, { limiter: 'gpu', metrics: { fpsAvg: 100 } }),
+    ]);
+    const d = buildDigest({ log: makeLog({}), stats: {}, events: [], windows: wa, guidance: [] });
+    expect(d.compact).toMatch(/log spans 2\.8 min wall-clock \(~2\.6 min of logging gaps\) — time offsets count from log start/);
+  });
+
+  it('omits the gap note when windows tile the log', () => {
+    const { log, wa } = richInputs();
+    const d = buildDigest({ log, stats: {}, events: [], windows: wa, guidance: [] });
+    expect(d.compact).not.toMatch(/logging gaps/);
+  });
+
   it('events carry their evidence tag', () => {
     const { log, wa } = richInputs();
     const e = { id: 'x', type: 'gpu-bound', severity: 'warn' as const, sentence: 'GPU-bound…', sampleCount: 2,
@@ -155,6 +196,37 @@ describe('evidence blocks', () => {
     expect(withG.compact).toMatch(/Missing data that would sharpen this:/);
     const withoutG = buildDigest({ log, stats: {}, events: [], windows: wa, guidance: [] });
     expect(withoutG.compact).not.toMatch(/Missing data/);
+  });
+
+  it('lists logged-but-never-fired throttle flags as explicit negatives', () => {
+    const log = makeLog({ flags: {
+      'flag.cpu.thermalThrottle': [false, false, false],
+      'flag.gpu.perfLimitThermal': [false, false, false],
+      'flag.gpu.perfLimitPower': [true, false, false],
+    } });
+    const d = buildDigest({ log, stats: {}, events: [], windows: makeWindowAnalysis([]), guidance: [] });
+    expect(d.compact).toMatch(/- Checked, not detected: CPU thermal throttle, GPU thermal limit/);
+    expect(d.compact).not.toMatch(/Checked, not detected:.*GPU power limit/);
+  });
+
+  it('omits the negatives line when no throttle flags were logged', () => {
+    const d = buildDigest({ log: makeLog({}), stats: {}, events: [], windows: makeWindowAnalysis([]), guidance: [] });
+    expect(d.compact).not.toMatch(/Checked, not detected/);
+  });
+
+  it('renders a context stub asking for game, cap source and power profile', () => {
+    const log = makeLog({ fps: { source: 'displayed', capped: true, capValue: 163 } });
+    const d = buildDigest({ log, stats: {}, events: [], windows: makeWindowAnalysis([]), guidance: [] });
+    expect(d.compact).toContain('Context (fill in for better advice):');
+    expect(d.compact).toContain('- Game, settings & resolution:');
+    expect(d.compact).toContain('- FPS cap source (in-game / RTSS / VSync): cap measured at ~163 — intended?');
+    expect(d.compact).toContain('- Power profile & cooling (performance mode, cooling pad, plugged in):');
+  });
+
+  it('omits the cap-source line when no cap was detected', () => {
+    const d = buildDigest({ log: makeLog({}), stats: {}, events: [], windows: makeWindowAnalysis([]), guidance: [] });
+    expect(d.compact).toContain('Context (fill in for better advice):');
+    expect(d.compact).not.toMatch(/FPS cap source/);
   });
 
   it('workload logs word the split without "gameplay"', () => {
