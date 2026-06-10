@@ -102,6 +102,11 @@
   text-wrap: balance;
 }
 
+.hero-verdict__coverage {
+  margin-top: var(--s2);
+  font-size: var(--text-sm);
+}
+
 .hero-verdict__metric {
   font-weight: 600;
 }

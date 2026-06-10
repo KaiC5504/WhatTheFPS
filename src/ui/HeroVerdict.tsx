@@ -42,6 +42,11 @@ export function HeroVerdict({ verdict }: { verdict: Verdict }): JSX.Element {
         <div className="hero-verdict__body">
           <span className="hero-verdict__pill u-label">{PILL_LABEL[health]}</span>
           <p className="hero-verdict__headline">{renderHeadline(headline)}</p>
+          {verdict.coverage && (
+            <p className="hero-verdict__coverage u-dim">
+              analyzed {(verdict.coverage.gameplayMs / 60_000).toFixed(1)} min of gameplay out of {(verdict.coverage.totalMs / 60_000).toFixed(1)} min logged
+            </p>
+          )}
         </div>
       </GlassCard>
     </div>

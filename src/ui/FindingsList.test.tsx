@@ -36,4 +36,14 @@ describe('FindingsList', () => {
       screen.queryByText('Nothing notable flagged — this run looks healthy.'),
     ).toBeNull();
   });
+
+  it('shows an evidence badge when requested', () => {
+    render(<FindingsList findings={[{ severity: 'warn', text: 'x', evidence: { tier: 'measured', basis: ['b'] } }]} showEvidence />);
+    expect(screen.getByText('measured')).toBeInTheDocument();
+  });
+
+  it('hides badges by default (easy mode)', () => {
+    render(<FindingsList findings={[{ severity: 'warn', text: 'x', evidence: { tier: 'measured', basis: ['b'] } }]} />);
+    expect(screen.queryByText('measured')).toBeNull();
+  });
 });

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { HeroVerdict } from './HeroVerdict';
 import type { Verdict } from '../types';
+import { fixtureVerdict } from './_fixtures';
 
 const goodVerdict: Verdict = {
   health: 'good',
@@ -67,5 +68,10 @@ describe('HeroVerdict', () => {
   it('warn verdict shows "Worth a look" pill', () => {
     render(<HeroVerdict verdict={warnVerdict} />);
     expect(screen.getByText('Worth a look')).toBeInTheDocument();
+  });
+
+  it('renders the coverage line when present', () => {
+    render(<HeroVerdict verdict={fixtureVerdict({ coverage: { gameplayMs: 14.2 * 60_000, totalMs: 18.5 * 60_000 } })} />);
+    expect(screen.getByText(/analyzed 14\.2 min of gameplay out of 18\.5 min/i)).toBeInTheDocument();
   });
 });
