@@ -1,4 +1,4 @@
-# WTFPS — what the FPS is going on?
+# <img src="public/wtfps-icon.svg" width="38" alt="" align="top" /> WTFPS — what the FPS is going on?
 
 Drop a [HWiNFO](https://www.hwinfo.com/) sensor-log CSV into your browser and get a
 plain-language verdict on what's bottlenecking your FPS — plus a token-efficient
