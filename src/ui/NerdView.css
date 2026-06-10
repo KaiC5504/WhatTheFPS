@@ -2,8 +2,11 @@
   gap: var(--s4);
 }
 
+/* Nerd mode is the instrument bench; it sits on solid metal. Dense data never
+   goes translucent — this overrides the panel background .card now carries. */
 .nerd-card {
   padding: var(--s5);
+  background: var(--surface);
 }
 
 .nerd-h {

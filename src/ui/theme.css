@@ -1,17 +1,36 @@
 /*
- * WTFPS — "diagnostic control room" theme.
- * Solid dark instrument surfaces; a single frosted hero; one blue accent (#3b9eff);
- * warm semantic colors for heat that never drift blue. All visual decisions live as
- * tokens here so the component layer stays cohesive. See DESIGN.md for the contract.
+ * WTFPS — "ambient glass" theme: a lit instrument room at night.
+ * A fixed blue aurora + film grain behind everything; translucent panels floating
+ * over it; real frosted glass only where it earns its cost (hero, top bar, modal
+ * overlay); dense data on solid surfaces; one blue accent (#3b9eff); warm semantic
+ * colors for heat that never drift blue. All visual decisions live as tokens here.
+ * See DESIGN.md for the contract.
  */
 
 :root {
-  /* Surfaces — near-black, faintly cool, with a stepped elevation scale */
-  --bg: #0a0d12;
+  /* Surfaces. The --surface family and --inset are the SOLID tier (dense data,
+     wells, chips); --panel-* is the translucent floating tier over the aurora. */
+  --bg: #07090f;
   --surface: #12161d;
   --surface-2: #181d26;
   --surface-3: #212834;
+  --surface-hover: #2c3543;
   --inset: #0c1016;
+
+  /* Atmosphere — fixed aurora + film grain, painted by body::before/::after.
+     Teal --aurora-2 is atmosphere-ONLY: never on interactive elements. */
+  --aurora-1: rgba(59, 158, 255, 0.16);
+  --aurora-2: rgba(45, 212, 191, 0.08);
+  --aurora-3: rgba(59, 158, 255, 0.07);
+  --grain-opacity: 0.05;
+
+  /* Panels — translucent tier. No backdrop blur by default (alpha over the smooth
+     fixed aurora reads identically and avoids re-filtering during entrances);
+     --panel-blur records the intended depth for a future opt-in. */
+  --panel-bg: rgba(18, 24, 34, 0.62);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --panel-blur: 10px;
+  --fill-faint: rgba(255, 255, 255, 0.05);
 
   /* Hairlines */
   --border: rgba(255, 255, 255, 0.06);
@@ -38,11 +57,19 @@
   --good-dim: rgba(79, 211, 148, 0.13);
   --warn-dim: rgba(255, 180, 59, 0.13);
   --bad-dim: rgba(255, 93, 93, 0.13);
+  --good-glow: rgba(79, 211, 148, 0.5);
+  --warn-glow: rgba(255, 180, 59, 0.5);
+  --bad-glow: rgba(255, 93, 93, 0.5);
 
-  /* Glass — hero + modals ONLY */
-  --glass-bg: rgba(20, 27, 38, 0.55);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-blur: 22px;
+  /* Glass — real backdrop blur on hero, top bar and modal overlay ONLY (≤3 active) */
+  --glass-bg: rgba(16, 22, 32, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: 16px;
+  --glass-saturate: 140%;
+  --bar-bg: rgba(10, 13, 18, 0.6);
+  --bar-blur: 14px;
+  --overlay-bg: rgba(0, 0, 0, 0.55);
+  --overlay-blur: 8px;
 
   /* Type */
   --font-display: 'Chakra Petch', system-ui, sans-serif;
@@ -79,6 +106,8 @@
   --shadow-glass: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 24px 70px rgba(0, 0, 0, 0.55);
   --shadow-pop: 0 16px 48px rgba(0, 0, 0, 0.5);
   --shadow-header: 0 8px 24px -16px rgba(0, 0, 0, 0.8);
+  --shadow-btn-accent: 0 6px 24px rgba(59, 158, 255, 0.35), inset 0 0 0 1px rgba(107, 182, 255, 0.4);
+  --glow-accent: 0 0 16px rgba(59, 158, 255, 0.4);
 
   /* Motion */
   --dur-fast: 120ms;
@@ -109,28 +138,32 @@ body {
   font-size: 15px;
   line-height: 1.5;
   color: var(--text);
-  /* atmosphere stack: two horizon glows over a faint engineering grid */
-  background:
-    radial-gradient(1200px 620px at 72% -12%, rgba(59, 158, 255, 0.1), transparent 60%),
-    radial-gradient(900px 520px at 8% 112%, rgba(255, 140, 60, 0.045), transparent 55%),
-    linear-gradient(rgba(255, 255, 255, 0.017) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.017) 1px, transparent 1px),
-    var(--bg);
-  background-size: auto, auto, 36px 36px, 36px 36px, auto;
-  background-attachment: fixed;
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Static film grain — never animated (large blurred-surface motion is banned) */
+/* Aurora — fixed, static, composited once; never animated */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.028;
-  mix-blend-mode: overlay;
+  background:
+    radial-gradient(60% 42% at 15% -8%, var(--aurora-1), transparent 70%),
+    radial-gradient(45% 38% at 90% 12%, var(--aurora-2), transparent 70%),
+    radial-gradient(55% 50% at 55% 115%, var(--aurora-3), transparent 70%);
+}
+
+/* Static film grain — never animated (large blurred-surface motion is banned) */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -169,7 +202,7 @@ a {
   background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2c3543;
+  background: var(--surface-hover);
   background-clip: content-box;
 }
 
@@ -210,13 +243,14 @@ a {
 }
 .wordmark__f {
   color: var(--accent);
+  text-shadow: 0 0 18px var(--accent-glow);
 }
 
 /* ---- primitive: Card ------------------------------------------------- */
 
 .card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
   border-radius: var(--r-lg);
   padding: var(--s5);
   box-shadow: var(--shadow-card);
@@ -232,8 +266,8 @@ a {
 .glass-card {
   position: relative;
   background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
-  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border: 1px solid var(--glass-border);
   border-radius: var(--r-xl);
   padding: var(--s6);
@@ -244,9 +278,9 @@ a {
 .glass-card::after {
   content: '';
   position: absolute;
-  inset: 0 0 auto 0;
+  inset: 0 10% auto 10%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
 }
 
 /* ---- primitive: StatTile --------------------------------------------- */
@@ -257,8 +291,8 @@ a {
   flex-direction: column;
   gap: var(--s2);
   padding: var(--s4) var(--s4) var(--s4) var(--s5);
-  background: linear-gradient(180deg, var(--surface-2), var(--surface));
-  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
   border-radius: var(--r-md);
   overflow: hidden;
   transition:
@@ -280,10 +314,10 @@ a {
   background: var(--accent-line);
 }
 .stat-tile--warn::before {
-  box-shadow: 0 0 18px -2px var(--warn);
+  box-shadow: 0 0 10px var(--warn-glow);
 }
 .stat-tile--bad::before {
-  box-shadow: 0 0 18px -2px var(--bad);
+  box-shadow: 0 0 10px var(--bad-glow);
 }
 .stat-tile__label {
   color: var(--text-mute);
@@ -350,7 +384,7 @@ a {
 .btn--accent {
   background: var(--accent);
   color: var(--on-accent);
-  box-shadow: 0 6px 18px rgba(59, 158, 255, 0.28);
+  box-shadow: var(--shadow-btn-accent);
 }
 .btn--accent:hover:not(:disabled) {
   background: var(--accent-bright);
@@ -371,7 +405,7 @@ a {
   color: var(--text);
 }
 .btn--subtle:hover:not(:disabled) {
-  background: #2a3340;
+  background: var(--surface-hover);
 }
 
 /* ---- accessibility: honor reduced motion ----------------------------- */
