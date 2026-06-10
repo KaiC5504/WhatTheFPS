@@ -44,7 +44,9 @@ function parseFlag(raw: string): boolean {
 }
 
 function timeToMs(t: string): number | null {
-  const m = /^(\d{1,2}):(\d{2}):(\d{2})(?:[.,](\d{1,3}))?/.exec(t.trim());
+  // HWiNFO writes single-digit minutes/seconds when < 10 (e.g. '23:27:0.696'),
+  // so accept 1–2 digits for each field.
+  const m = /^(\d{1,2}):(\d{1,2}):(\d{1,2})(?:[.,](\d{1,3}))?/.exec(t.trim());
   if (!m) return null;
   const [, hh, mm, ss, ms] = m;
   return ((Number(hh) * 60 + Number(mm)) * 60 + Number(ss)) * 1000 + Number((ms ?? '0').padEnd(3, '0'));

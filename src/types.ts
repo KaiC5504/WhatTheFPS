@@ -181,4 +181,4 @@ export interface Verdict { health: Health; mascotMood: MascotMood; headline: str
 export type DigestMode = 'compact' | 'full';
 export interface Digest { compact: string; full: string; tokenEstimate: Record<DigestMode, number>; fpsSourceLabel: string; }
 
-export interface AnalysisResult { log: NormalizedLog; stats: Partial<Record<CanonicalKey, Stats>>; events: DiagEvent[]; verdict: Verdict; digest: Digest; }
+export interface AnalysisResult { log: NormalizedLog; stats: Partial<Record<CanonicalKey, Stats>>; events: DiagEvent[]; verdict: Verdict; digest: Digest; windows: WindowAnalysis; }

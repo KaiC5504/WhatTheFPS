@@ -74,13 +74,25 @@ const COMMON_CAPS = [30, 60, 72, 90, 100, 120, 141, 144, 160, 165, 175, 180, 200
 
 function detectCap(cleaned: number[]): { capped: boolean; capValue: number | null } {
   if (cleaned.length < 5) return { capped: false, capValue: null };
+  const sorted = [...cleaned].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
   const candidates = new Set<number>(COMMON_CAPS);
   candidates.add(Math.round(Math.max(...cleaned)));
-  let best: { value: number; frac: number } | null = null;
+
+  let best: { value: number; within1: number } | null = null;
   for (const cap of candidates) {
-    const within = cleaned.filter((v) => Math.abs(v - cap) <= 1).length;
-    const frac = within / cleaned.length;
-    if (frac >= 0.8 && (!best || frac > best.frac)) best = { value: cap, frac };
+    const within1 = cleaned.filter((v) => Math.abs(v - cap) <= 1).length / cleaned.length;
+    const within3 = cleaned.filter((v) => Math.abs(v - cap) <= 3).length / cleaned.length;
+    const above = cleaned.filter((v) => v > cap + 3).length / cleaned.length;
+
+    // Clean cap: nearly every sample sits right on the ceiling (vsync at a steady scene).
+    const cleanCap = within1 >= 0.8;
+    // Noisy real-world cap: the framerate ceilings out near `cap` — the median sits on
+    // it and most samples cluster within a few FPS — with only occasional loading dips
+    // (below) and rare overshoots (above). Catches a 120 cap that varies 115–125.
+    const noisyCap = Math.abs(median - cap) <= 2 && within3 >= 0.7 && above <= 0.1;
+
+    if ((cleanCap || noisyCap) && (!best || within1 > best.within1)) best = { value: cap, within1 };
   }
   return best ? { capped: true, capValue: best.value } : { capped: false, capValue: null };
 }

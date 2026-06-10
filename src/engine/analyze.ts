@@ -5,10 +5,14 @@ import { buildColumns } from '../parsing/columns';
 import { normalize } from '../sensors/normalize';
 import { buildFps } from '../stats/fps';
 import { computeStats } from '../stats/percentiles';
-import { detectThrottling } from '../detect/throttling';
-import { detectFpsCap } from '../detect/fpsCap';
-import { detectCpuBottleneck } from '../detect/cpuBottleneck';
-import { detectPowerHotspotRam } from '../detect/powerHotspotRam';
+import { buildWindowAnalysis } from '../windows';
+import { causeThermalCollapse } from '../causes/thermalCollapse';
+import { causeFpsCap } from '../causes/fpsCap';
+import { causeCpuBound } from '../causes/cpuBound';
+import { causeGpuBound } from '../causes/gpuBound';
+import { causeVramPressure } from '../causes/vramPressure';
+import { causeRamPressure } from '../causes/ramPressure';
+import { causeHotspotDelta } from '../causes/hotspotDelta';
 import { buildVerdict } from '../verdict/buildVerdict';
 import { buildDigest } from '../digest/digest';
 
@@ -31,16 +35,21 @@ export function analyze(bytes: Uint8Array, opts: AnalyzeOptions = {}): AnalysisR
     if (sensor) stats[key] = computeStats(sensor.values);
   }
 
-  // Detectors run after fps is populated (detectFpsCap reads log.fps).
+  const windows = buildWindowAnalysis(log);
+
+  // Cause analyzers consume the windowed analysis (and run after fps is populated).
   const events: DiagEvent[] = [
-    ...detectThrottling(log, stats),
-    ...detectFpsCap(log, stats),
-    ...detectCpuBottleneck(log, stats),
-    ...detectPowerHotspotRam(log, stats),
+    ...causeThermalCollapse(log, stats, windows),
+    ...causeFpsCap(log, stats, windows),
+    ...causeCpuBound(log, stats, windows),
+    ...causeGpuBound(log, stats, windows),
+    ...causeVramPressure(log, stats, windows),
+    ...causeRamPressure(log, stats, windows),
+    ...causeHotspotDelta(log, stats, windows),
   ];
 
   const verdict = buildVerdict(log, stats, events);
   const digest = buildDigest({ log, stats, events, goal: opts.goal });
 
-  return { log, stats, events, verdict, digest };
+  return { log, stats, events, verdict, digest, windows };
 }

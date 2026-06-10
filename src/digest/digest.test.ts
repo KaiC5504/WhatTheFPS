@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { computeStats } from '../stats/percentiles';
-import { makeLog } from '../detect/testkit';
-import { makeEvent } from '../detect/events';
+import { makeLog } from '../causes/testkit';
+import { makeEvent } from '../causes/events';
 import { buildDigest } from './digest';
 import type { CanonicalKey, Stats } from '../types';
 

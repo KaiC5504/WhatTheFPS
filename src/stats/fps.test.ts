@@ -90,6 +90,16 @@ describe('buildFps', () => {
     expect(r.capValue).toBe(60);
   });
 
+  it('detects a noisy real-world cap (median on the ceiling, dips and overshoots)', () => {
+    // ~120 cap that varies 115–125 with a loading dip and a rare overshoot.
+    const r = fps(
+      ['Date', 'Time', 'Framerate Displayed (avg) [FPS]'],
+      [118, 120, 119, 121, 117, 122, 40, 120, 119, 141, 118, 120].map((v, i) => ['9.6.2026', `12:00:${i}.000`, v]),
+    );
+    expect(r.capped).toBe(true);
+    expect(r.capValue).toBe(120);
+  });
+
   it('does not flag a cap on a freely-varying framerate', () => {
     const r = fps(
       ['Date', 'Time', 'Framerate Displayed (avg) [FPS]'],

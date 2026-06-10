@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { windowMean, windowMax, flagsFiredIn, buildMetrics } from './slice';
-import { makeLog } from '../detect/testkit';
+import { makeLog } from '../causes/testkit';
 import type { TimeWindow } from '../types';
 
 const W: TimeWindow = { index: 0, startRow: 1, endRow: 3, startMs: 2000, endMs: 6000 };

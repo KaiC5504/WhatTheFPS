@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildWindowAnalysis } from './index';
-import { makeLog } from '../detect/testkit';
+import { makeLog } from '../causes/testkit';
 
 function syntheticLog() {
   const n = 48; // 12 windows of 4 rows at 2000ms

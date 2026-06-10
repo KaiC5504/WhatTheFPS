@@ -51,6 +51,12 @@ describe('analyze (golden, real logs)', () => {
     );
     expect(capOrBottleneck).toBe(true);
 
+    // Phase-1 acceptance: despite CPU Busy ≈ frametime, the cap gate wins.
+    expect(r.windows.timeSplit.dominant).not.toBe('cpu');
+    expect(r.windows.activityKind).toBe('gameplay');
+    const gameplayWindows = r.windows.windows.filter((w) => w.activity === 'gameplay');
+    expect(gameplayWindows.length).toBeGreaterThan(0);
+
     for (const tile of r.verdict.hero) expect(tile.value).not.toContain('NaN');
   });
 
@@ -72,7 +78,19 @@ describe('analyze (golden, real logs)', () => {
     expect(r.digest.compact).toContain('Sensors:');
     expect(r.digest.compact).toMatch(/p95/);
 
+    // GPU benchmark: dominant limiter is the GPU, measured via PresentMon.
+    expect(r.windows.timeSplit.dominant).toBe('gpu');
+    const gpuWins = r.windows.windows.filter((w) => w.limiter === 'gpu');
+    expect(gpuWins.length).toBeGreaterThan(0);
+    expect(gpuWins.some((w) => w.tier === 'measured')).toBe(true);
+
     for (const tile of r.verdict.hero) expect(tile.value).not.toContain('NaN');
+  });
+
+  it('Cinebench log (no FPS) is treated as a workload, never gameplay-worded', () => {
+    const r = analyze(sample('Intel + Nvidia/StrixG16_cinebench_CPU_MultiThreads_3524pts.CSV'));
+    expect(r.windows.activityKind).toBe('workload');
+    for (const e of r.events) expect(e.sentence.toLowerCase()).not.toContain('gameplay');
   });
 
   it('all 12 sample logs analyze cleanly: no throw, 5 finite hero tiles, digest text, no invented numbers', () => {
@@ -99,6 +117,17 @@ describe('analyze (golden, real logs)', () => {
         if (!s) continue;
         for (const v of Object.values(s)) expect(Number.isFinite(v), rel).toBe(true);
       }
+
+      // window analysis is fully finite
+      expect(Number.isFinite(r.windows.timeSplit.gameplayMs), rel).toBe(true);
+      expect(Number.isFinite(r.windows.timeSplit.totalMs), rel).toBe(true);
+      for (const share of Object.values(r.windows.timeSplit.shares)) expect(Number.isFinite(share), rel).toBe(true);
+      for (const w of r.windows.windows) {
+        for (const [k, v] of Object.entries(w.metrics)) {
+          if (typeof v === 'number') expect(Number.isFinite(v), `${rel} / window ${w.window.index} / ${k}`).toBe(true);
+        }
+      }
+      for (const wm of r.windows.worst) expect(Number.isFinite(wm.fpsDropPct), rel).toBe(true);
     }
   });
 });
