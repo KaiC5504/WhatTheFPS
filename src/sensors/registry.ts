@@ -23,6 +23,8 @@ const DEFS: SensorDef[] = [
     match: eq('CPU Package', 'CPU (Tctl/Tdie)') },
   { key: 'cpu.tempCoreMax', domain: 'cpu', kind: 'numeric', label: 'CPU Core Max', unit: '°C',
     match: eq('Core Max', 'CPU CCD1 (Tdie)') },
+  { key: 'cpu.tempCoreAvg', domain: 'cpu', kind: 'numeric', label: 'CPU Core Avg', unit: '°C',
+    match: eq('Core Temperatures (avg)', 'CPU Core Temperatures (avg)') },
   // CPU usage
   { key: 'cpu.usageTotal', domain: 'cpu', kind: 'numeric', label: 'Total CPU Usage', unit: '%',
     match: eq('Total CPU Usage') },

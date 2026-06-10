@@ -147,3 +147,30 @@ describe('coverage', () => {
     expect(v.coverage!.totalMs).toBeGreaterThan(v.coverage!.gameplayMs);
   });
 });
+
+describe('temp hero tiles — average headline + secondary reading', () => {
+  const tile = (sensors: Record<string, number[]>, key: string) =>
+    buildVerdict(log_with(sensors), statsFor(sensors), [], makeWindowAnalysis([])).hero.find((h) => h.key === key)!;
+
+  it('CPU tile headlines the package average and shows the all-core average as the sub', () => {
+    const cpu = tile({ 'cpu.tempPackage': [76, 78, 77], 'cpu.tempCoreAvg': [64, 66, 65], 'cpu.tempCoreMax': [80, 82, 81] }, 'cpu.temp');
+    expect(cpu.value).toBe('77°C');
+    expect(cpu.sub).toBe('cores 65°C');
+  });
+
+  it('GPU tile headlines the edge average and shows the hotspot peak as the sub', () => {
+    const gpu = tile({ 'gpu.temp': [70, 74, 72], 'gpu.hotspot': [88, 101, 95] }, 'gpu.temp');
+    expect(gpu.value).toBe('72°C');
+    expect(gpu.sub).toBe('hotspot 101°C');
+  });
+
+  it('colors the tile from the peak, not the displayed average (a calm avg with a hot spike still flags)', () => {
+    const gpu = tile({ 'gpu.temp': [60, 92, 58] }, 'gpu.temp');
+    expect(gpu.value).toBe('70°C');     // average stays calm
+    expect(gpu.severity).toBe('bad');   // but the 92°C spike colors it
+  });
+
+  it('omits the sub when the secondary sensor is absent', () => {
+    expect(tile({ 'cpu.tempPackage': [70, 72] }, 'cpu.temp').sub).toBeUndefined();
+  });
+});

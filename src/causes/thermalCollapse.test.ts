@@ -86,3 +86,48 @@ describe('causeThermalCollapse — re-homed flag reporting', () => {
     expect(causeThermalCollapse(log, statsFor(sensors), wa).some((x) => x.type === 'throttling')).toBe(false);
   });
 });
+
+// NVIDIA's "Performance Limit - Thermal" is a soft clock-cap reason that latches briefly even on
+// a cool card — unlike a CPU hardware-protection throttle. It must be judged by how much of the
+// session it covered, and the edge temp (not the always-hotter hotspot) is the headline number.
+describe('causeThermalCollapse — GPU thermal-limit (perf-cap reason)', () => {
+  const wa = makeWindowAnalysis([makeWindow(0)]);
+  function statsFor(sensors: Record<string, number[]>) {
+    const out: Record<string, import('../types').Stats> = {};
+    for (const [k, v] of Object.entries(sensors)) {
+      const sorted = [...v].sort((a, b) => a - b);
+      out[k] = { count: v.length, avg: v.reduce((s, n) => s + n, 0) / v.length, min: sorted[0], max: sorted[sorted.length - 1], p5: sorted[0], p95: sorted[sorted.length - 1], p99: sorted[sorted.length - 1], p1Low: sorted[0], p5Low: sorted[0] };
+    }
+    return out as Partial<Record<import('../types').CanonicalKey, import('../types').Stats>>;
+  }
+  const flagArray = (trueCount: number, total: number) => Array.from({ length: total }, (_, i) => i < trueCount);
+
+  it('suppresses a transient thermal-cap blip (0.6% of the session — measurement noise)', () => {
+    const log = makeLog({ flags: { 'flag.gpu.perfLimitThermal': flagArray(13, 2175) }, sensors: { 'gpu.temp': [70, 86], 'gpu.hotspot': [80, 101] } });
+    const events = causeThermalCollapse(log, statsFor({ 'gpu.temp': [70, 86], 'gpu.hotspot': [80, 101] }), wa);
+    expect(events.some((e) => e.type === 'throttling')).toBe(false);
+  });
+
+  it('reports the edge temp as the peak and labels the hotspot — never the bare hotspot', () => {
+    const sensors = { 'gpu.temp': [70, 86], 'gpu.hotspot': [80, 101] };
+    const log = makeLog({ flags: { 'flag.gpu.perfLimitThermal': flagArray(13, 20) }, sensors });
+    const e = causeThermalCollapse(log, statsFor(sensors), wa).find((x) => x.type === 'throttling')!;
+    expect(e.sentence).toContain('86°C');           // GPU edge temp peak (what the user sees in MSI)
+    expect(e.sentence).toContain('hotspot 101°C');  // hotspot present but explicitly labeled
+    expect(e.sentence).not.toMatch(/\(peak 101°C\)/); // the old misleading bare peak is gone
+  });
+
+  it('fires at most a warn for sustained thermal limiting — never bad', () => {
+    const sensors = { 'gpu.temp': [70, 86] };
+    const log = makeLog({ flags: { 'flag.gpu.perfLimitThermal': flagArray(18, 20) }, sensors }); // 90%
+    const e = causeThermalCollapse(log, statsFor(sensors), wa).find((x) => x.type === 'throttling')!;
+    expect(e.severity).toBe('warn');
+  });
+
+  it('treats a present-but-minor amount of thermal limiting as a calm info note', () => {
+    const sensors = { 'gpu.temp': [70, 86] };
+    const log = makeLog({ flags: { 'flag.gpu.perfLimitThermal': flagArray(2, 20) }, sensors }); // 10%
+    const e = causeThermalCollapse(log, statsFor(sensors), wa).find((x) => x.type === 'throttling')!;
+    expect(e.severity).toBe('info');
+  });
+});

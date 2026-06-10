@@ -54,13 +54,23 @@ function usageTile(key: string, label: string, value: number | null): HeroNumber
   };
 }
 
-function tempTile(key: string, label: string, value: number | null, warnAt: number, badAt: number): HeroNumber {
-  return {
+// Headline number is the session average (what MSI/G-Helper show); a smaller secondary
+// reading sits underneath. Color comes from the peak, so a brief spike still flags even when
+// the average looks calm.
+function tempTile(
+  key: string, label: string,
+  avg: number | null, peakValue: number | null,
+  sub: string | null,
+  warnAt: number, badAt: number,
+): HeroNumber {
+  const tile: HeroNumber = {
     key,
     label,
-    value: value === null ? '—' : `${Math.round(value)}°C`,
-    severity: tempSeverity(value, warnAt, badAt),
+    value: avg === null ? '—' : `${Math.round(avg)}°C`,
+    severity: tempSeverity(peakValue, warnAt, badAt),
   };
+  if (sub) tile.sub = sub;
+  return tile;
 }
 
 function buildHero(log: NormalizedLog, stats: Partial<Record<CanonicalKey, Stats>>): HeroNumber[] {
@@ -72,12 +82,22 @@ function buildHero(log: NormalizedLog, stats: Partial<Record<CanonicalKey, Stats
     severity: 'info',
   };
 
+  // CPU: package average headline (the standard "CPU temp"), all-core average as the sub.
+  const cpuPkgAvg = avgOf(stats, 'cpu.tempPackage');
+  const cpuCoreAvg = avgOf(stats, 'cpu.tempCoreAvg');
+  const cpuMain = cpuPkgAvg ?? cpuCoreAvg ?? avgOf(stats, 'cpu.tempCoreMax');
+  const cpuSub = cpuPkgAvg !== null && cpuCoreAvg !== null ? `cores ${Math.round(cpuCoreAvg)}°C` : null;
+
+  // GPU: edge-temp average headline, hotspot peak as the sub.
+  const gpuHotPeak = maxOf(stats, ['gpu.hotspot']);
+  const gpuSub = gpuHotPeak !== null ? `hotspot ${Math.round(gpuHotPeak)}°C` : null;
+
   return [
     fpsTile,
     usageTile('cpu.usageTotal', 'CPU usage', avgOf(stats, 'cpu.usageTotal')),
-    tempTile('cpu.temp', 'CPU temp', maxOf(stats, ['cpu.tempPackage', 'cpu.tempCoreMax']), 90, 100),
+    tempTile('cpu.temp', 'CPU temp', cpuMain, maxOf(stats, ['cpu.tempPackage', 'cpu.tempCoreMax']), cpuSub, 90, 100),
     usageTile('gpu.usage', 'GPU usage', avgOf(stats, 'gpu.usage')),
-    tempTile('gpu.temp', 'GPU temp', maxOf(stats, ['gpu.temp']), 85, 90),
+    tempTile('gpu.temp', 'GPU temp', avgOf(stats, 'gpu.temp'), maxOf(stats, ['gpu.temp']), gpuSub, 85, 90),
   ];
 }
 

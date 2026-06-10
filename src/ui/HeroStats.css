@@ -27,6 +27,13 @@
   color: var(--text-mute);
 }
 
+/* Secondary reading (e.g. all-core avg / hotspot peak). Stays muted so the headline
+   average reads first; never recolored by the tier, unlike the value. */
+.hero-stats .stat-tile__sub {
+  font-size: var(--text-xs);
+  color: var(--text-mute);
+}
+
 /* Neutralize the primitive's default blue edge bar; tiers recolor it below. */
 .hero-stats .stat-tile::before {
   background: var(--border-strong);

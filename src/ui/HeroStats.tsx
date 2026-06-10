@@ -51,6 +51,7 @@ export function HeroStats({ hero }: { hero: HeroNumber[] }): JSX.Element {
           <div key={tile.key} className={cx('stat-tile', `stat-tile--${tier}`)}>
             <span className="stat-tile__label u-label">{tile.label}</span>
             <span className="stat-tile__value mono">{tile.value}</span>
+            {tile.sub ? <span className="stat-tile__sub mono">{tile.sub}</span> : null}
             {status ? <span className="stat-tile__status">{status}</span> : null}
           </div>
         );

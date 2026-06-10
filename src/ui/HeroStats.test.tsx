@@ -35,4 +35,13 @@ describe('HeroStats', () => {
     render(<HeroStats hero={fiveHero} />);
     expect(screen.queryByText('no framerate logged')).toBeNull();
   });
+
+  it('renders a tile sub-reading when present', () => {
+    const hero: HeroNumber[] = [
+      { key: 'gpu.temp', label: 'GPU Temp', value: '73°C', severity: 'warn', sub: 'hotspot 101°C' },
+      ...fiveHero.slice(1),
+    ];
+    render(<HeroStats hero={hero} />);
+    expect(screen.getByText('hotspot 101°C')).toBeInTheDocument();
+  });
 });

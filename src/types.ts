@@ -20,7 +20,7 @@ export interface ColumnMeta {
 
 export type CanonicalKey =
   // CPU
-  | 'cpu.tempPackage' | 'cpu.tempCoreMax' | 'cpu.usageTotal' | 'cpu.usageCoreMax'
+  | 'cpu.tempPackage' | 'cpu.tempCoreMax' | 'cpu.tempCoreAvg' | 'cpu.usageTotal' | 'cpu.usageCoreMax'
   | 'cpu.clock' | 'cpu.clockEff' | 'cpu.power'
   // discrete (gaming) GPU
   | 'gpu.temp' | 'gpu.hotspot' | 'gpu.memJunction' | 'gpu.usage'
@@ -174,7 +174,7 @@ export interface WindowAnalysis {
 
 export type Health = 'good' | 'warn' | 'bad';
 export type MascotMood = 'chill' | 'concerned' | 'panic';
-export interface HeroNumber { key: string; label: string; value: string; severity: Severity; }
+export interface HeroNumber { key: string; label: string; value: string; severity: Severity; sub?: string; }
 export interface Finding { severity: Severity; text: string; fix?: string; evidence?: Evidence; }
 
 export interface Verdict {

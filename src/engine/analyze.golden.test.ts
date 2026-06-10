@@ -93,14 +93,22 @@ describe('analyze (golden, real logs)', () => {
     for (const e of r.events) expect(e.sentence.toLowerCase()).not.toContain('gameplay');
   });
 
+  it('ItTakesTwo: a 0.6% thermal-cap blip is not a bad headline and never shows the hotspot as the GPU peak', () => {
+    const r = analyze(sample('Intel + Nvidia/KaiC_ItTakesTwo.CSV'));
+    // GPU edge temp tops out ~86°C; the hotspot's ~101°C must not be presented as the GPU peak.
+    expect(r.events.some((e) => /hit its thermal limit/.test(e.sentence))).toBe(false);
+    expect(r.events.some((e) => /\(peak 101°C\)/.test(e.sentence))).toBe(false);
+    expect(r.events.filter((e) => e.type === 'throttling').every((e) => e.severity !== 'bad')).toBe(true);
+  });
+
   it('digest format lock (superposition log)', () => {
     const r = analyze(sample('Intel + Nvidia/StrixG16_superposition_GPU_1080extreme_5633score.CSV'));
     expect(r.digest.full).toMatchSnapshot();
   });
 
-  it('all 12 sample logs analyze cleanly: no throw, 5 finite hero tiles, digest text, no invented numbers', () => {
+  it('all sample logs analyze cleanly: no throw, 5 finite hero tiles, digest text, no invented numbers', () => {
     const logs = allSampleLogs();
-    expect(logs.length).toBe(12);
+    expect(logs.length).toBe(13);
 
     for (const rel of logs) {
       let r: AnalysisResult;

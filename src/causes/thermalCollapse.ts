@@ -1,4 +1,4 @@
-import type { CanonicalKey, DiagEvent, FlagKey, NormalizedLog, Stats, WindowAnalysis, WindowClassification } from '../types';
+import type { CanonicalKey, DiagEvent, FlagKey, NormalizedLog, Severity, Stats, WindowAnalysis, WindowClassification } from '../types';
 import { makeEvent } from './events';
 import { linearTrend } from '../stats/trend';
 
@@ -51,6 +51,40 @@ function flagEvent(
   return makeEvent({
     type: 'throttling', severity, sentence, fix: THROTTLE_FIX, sampleCount: count,
     evidence: { tier: 'measured', basis: ['hardware-latched throttle flag'] },
+  });
+}
+
+// NVIDIA's "Performance Limit - Thermal" is a soft clock-cap reason, not a hardware-protection
+// latch like CPU PROCHOT — it blips on for a sample or two even on a cool card. Judge it by how
+// much of the session it covered, and never let a transient blip become a top-severity alarm.
+const GPU_THERMAL_MIN_DENSITY = 0.05;   // below this it's measurement noise — don't surface it
+const GPU_THERMAL_WARN_DENSITY = 0.25;  // sustained enough to actually be costing frames
+
+function gpuThermalTempClause(stats: Partial<Record<CanonicalKey, Stats>>): string {
+  const edge = stats['gpu.temp'];
+  const hot = stats['gpu.hotspot'];
+  const e = edge && edge.count > 0 ? Math.round(edge.max) : null;
+  const h = hot && hot.count > 0 ? Math.round(hot.max) : null;
+  // The hotspot runs ~15–25°C hotter than the edge by design and throttles much higher, so it is
+  // only ever shown labeled — never as the bare "GPU temp" the user recognizes from MSI/Afterburner.
+  if (e !== null && h !== null) return ` (GPU temp peaked ${e}°C, hotspot ${h}°C)`;
+  if (e !== null) return ` (GPU temp peaked ${e}°C)`;
+  if (h !== null) return ` (GPU hotspot peaked ${h}°C)`;
+  return '';
+}
+
+function gpuThermalEvent(stats: Partial<Record<CanonicalKey, Stats>>, count: number, total: number): DiagEvent | null {
+  const density = total > 0 ? count / total : 0;
+  if (density < GPU_THERMAL_MIN_DENSITY) return null;
+  const pct = Math.round(density * 100);
+  const severity: Severity = density >= GPU_THERMAL_WARN_DENSITY ? 'warn' : 'info';
+  return makeEvent({
+    type: 'throttling',
+    severity,
+    sentence: `GPU clocks were thermally limited ${pct}% of the session${gpuThermalTempClause(stats)}.`,
+    fix: 'Improve GPU cooling (fan curve, dust, pads) or undervolt to keep clocks up.',
+    sampleCount: count,
+    evidence: { tier: 'measured', basis: [`GPU thermal-limit flag latched in ${pct}% of samples`] },
   });
 }
 
@@ -145,10 +179,8 @@ export function causeThermalCollapse(
 
   const gpuThermalFlag = log.flags['flag.gpu.perfLimitThermal'];
   if (gpuThermalFlag) {
-    const count = countTrue(gpuThermalFlag.values);
-    if (count > 0) {
-      events.push(flagEvent('GPU', 'its thermal limit', count, peakTemp(stats, ['gpu.temp', 'gpu.hotspot'])));
-    }
+    const ev = gpuThermalEvent(stats, countTrue(gpuThermalFlag.values), gpuThermalFlag.values.length);
+    if (ev) events.push(ev);
   }
 
   const collapse = collapseEvent(wa);
