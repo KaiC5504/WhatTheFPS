@@ -599,7 +599,21 @@ UI tests use `environment: 'jsdom'` (add a `// @vitest-environment jsdom` header
 
 ---
 
-## v2 Roadmap (next plans, post-v1)
+## v1.5 — Evidence engine + real Easy/Nerd modes (slotted before v2, 2026-06-10)
+
+Before starting v2: fix the two v1 weaknesses found in review — Easy/Nerd render the same
+content, and the detectors guess from whole-log aggregates instead of proving with
+time-aligned evidence. Windowed gameplay segmentation, PresentMon GPU-Busy/Wait two-tier
+classification (`measured` vs `inferred`), time-split + worst-moments verdict, evidence-rich
+digest, and a true content split between modes.
+→ Design spec: [`specs/2026-06-10-wtfps-v1.5-evidence-engine-design.md`](../specs/2026-06-10-wtfps-v1.5-evidence-engine-design.md).
+→ Implementation plans: [`2026-06-10-wtfps-v1.5-phase1-engine.md`](2026-06-10-wtfps-v1.5-phase1-engine.md) ·
+[`2026-06-10-wtfps-v1.5-phase2-verdict-digest.md`](2026-06-10-wtfps-v1.5-phase2-verdict-digest.md) ·
+[`2026-06-10-wtfps-v1.5-phase3-ui-modes.md`](2026-06-10-wtfps-v1.5-phase3-ui-modes.md).
+*(Absorbs the auto-segmentation half of old v2 item #2 and most of item #3: GPU-busy vs
+CPU-busy, per-core detail, confidence levels.)*
+
+## v2 Roadmap (next plans, post-v1.5)
 
 Each becomes its own brainstorm → spec → plan cycle. **Re-shaped 2026-06-10** (session history
 folded into #1; share link / Tauri / live-tail demoted to stretch). Priority order:
@@ -610,8 +624,9 @@ folded into #1; share link / Tauri / live-tail demoted to stretch). Priority ord
    Nerd full delta table); stacked BEFORE/AFTER compare digest; warn-but-allow mismatch guardrails.
    → Design spec: [`specs/2026-06-10-wtfps-before-after-compare-design.md`](../specs/2026-06-10-wtfps-before-after-compare-design.md).
    *(Originally items #1 + #6; merged because both rest on one localStorage "saved run" foundation.)*
-2. **Interactive timelines & windowing** — uPlot timelines with event markers; brush-to-select a window and recompute stats; auto-segment idle/load/benchmark phases. (Needs raw samples — does not read from saved runs, which only hold summary stats.)
-3. **Deeper diagnostics** — frame-pacing/micro-stutter (frame-time variance, GPU-busy vs CPU-busy, animation error); VRM/mem-junction/drive temps; fan-vs-temp; per-core detail; confidence levels.
+   *(2026-06-10 note: the compare diff should also surface v1.5's time-split and evidence tiers.)*
+2. **Interactive timelines & windowing** — uPlot timelines with event markers; brush-to-select a window and recompute stats. (Auto-segmentation shipped in v1.5; this item is the interactive layer on top.)
+3. **Deeper diagnostics** — frame-pacing/micro-stutter beyond v1.5 (animation error); VRM/mem-junction/drive temps; fan-vs-temp; storage/asset-streaming stutter correlation.
 4. **Specs & normalization breadth** — optional HWiNFO report-file parsing; broaden the registry (desktop Ryzen/Intel, Radeon dGPU, Arc); small reference DB of expected temp ranges.
 5. **Digest & profiles** — goal presets; multiple LLM output profiles; local HTML/PNG report card.
 6. **Packaging & a11y** — PWA/offline; full a11y pass.
