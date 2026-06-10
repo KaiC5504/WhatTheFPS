@@ -1,0 +1,14 @@
+.evidence-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--s2);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border-strong);
+  color: var(--text-dim);
+  background: var(--surface-2);
+}
+.evidence-badge--measured {
+  border-color: var(--accent-line);
+  color: var(--accent-bright);
+  background: var(--accent-dim);
+}
