@@ -102,6 +102,9 @@
   border: 1px solid var(--border);
   border-radius: var(--r-md);
 }
+.nerd-spark--timeline {
+  height: 140px;
+}
 .nerd-legend {
   display: flex;
   gap: var(--s5);

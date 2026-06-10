@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { NerdView } from './NerdView';
 import { analyze } from '../engine/analyze';
+import { fixtureResult } from './_fixtures';
 
 // A small but representative log: cpu/gpu temps + clocks + usage, both FPS columns,
 // and two flag columns (one throttle, one perf-limit) with some "Yes" samples.
@@ -37,5 +38,15 @@ describe('NerdView', () => {
     expect(screen.getByText('GPU Perf Limit Utilization')).toBeInTheDocument();
     // thermal throttle fired on 2 of 3 samples
     expect(screen.getByText('2 of 3')).toBeInTheDocument();
+  });
+
+  it('nerd view shows timeline band, worst moments, core grid and badges', () => {
+    const result = fixtureResult();
+    result.log.cores = { usage: [{ label: 'Core 0 T0', coreType: 'std', coreIndex: 0, thread: 0, values: [50, 60] }], effectiveClock: [] };
+    render(<NerdView result={result} />);
+    expect(screen.getByText('Session timeline')).toBeInTheDocument();
+    expect(screen.getByText('Worst moments')).toBeInTheDocument();
+    expect(screen.getByText('Per-thread CPU usage')).toBeInTheDocument();
+    expect(screen.getByText('Per-sensor statistics')).toBeInTheDocument();
   });
 });

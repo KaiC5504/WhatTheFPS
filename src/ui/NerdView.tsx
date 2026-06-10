@@ -1,5 +1,8 @@
 import type { AnalysisResult, CanonicalKey, Stats } from '../types';
 import { Card } from './primitives';
+import { WindowTimeline } from './WindowTimeline';
+import { WorstMoments } from './WorstMoments';
+import { CoreGrid } from './CoreGrid';
 import './NerdView.css';
 
 function n(x: number): string {
@@ -11,7 +14,10 @@ const SENSOR_ORDER: CanonicalKey[] = [
   'cpu.tempPackage', 'cpu.tempCoreMax', 'cpu.usageTotal', 'cpu.usageCoreMax',
   'cpu.clock', 'cpu.clockEff', 'cpu.power',
   'gpu.temp', 'gpu.hotspot', 'gpu.memJunction', 'gpu.usage', 'gpu.memUsagePct',
-  'gpu.clock', 'gpu.clockEff', 'gpu.power', 'gpu.powerLimit',
+  'gpu.memControllerLoad', 'gpu.clock', 'gpu.clockEff', 'gpu.power', 'gpu.powerLimit',
+  'vram.allocatedMb', 'vram.availableMb', 'vram.d3dDedicatedMb', 'vram.d3dDynamicMb',
+  'pm.frameTimeMs', 'pm.gpuBusyMs', 'pm.gpuWaitMs', 'pm.cpuBusyMs', 'pm.cpuWaitMs',
+  'rtss.frameTimeMs',
   'igpu.temp', 'igpu.usage',
   'ram.loadPct', 'ram.usedMb', 'pagefile.usagePct',
 ];
@@ -73,8 +79,14 @@ function FpsDetail({ result }: { result: AnalysisResult }) {
           <div><dt>Source</dt><dd>{fps.sourceLabel || fps.source}</dd></div>
           <div><dt>Displayed avg</dt><dd className="mono">{fps.displayedAvg !== null ? n(fps.displayedAvg) : 'n/a'}</dd></div>
           <div><dt>Presented avg</dt><dd className="mono">{fps.presentedAvg !== null ? n(fps.presentedAvg) : 'n/a'}</dd></div>
-          <div><dt>1% low</dt><dd className="mono">{n(fps.stats.p1Low)}</dd></div>
-          <div><dt>5% low</dt><dd className="mono">{n(fps.stats.p5Low)}</dd></div>
+          <div><dt>p1 of sampled FPS</dt><dd className="mono">{n(fps.stats.p1Low)}</dd></div>
+          <div><dt>p5 of sampled FPS</dt><dd className="mono">{n(fps.stats.p5Low)}</dd></div>
+          {fps.presented1PctLow !== null && (
+            <div><dt>1% low (per-frame)</dt><dd className="mono">{n(fps.presented1PctLow)}</dd></div>
+          )}
+          {fps.presented01PctLow !== null && (
+            <div><dt>0.1% low (per-frame)</dt><dd className="mono">{n(fps.presented01PctLow)}</dd></div>
+          )}
           <div><dt>Cap</dt><dd>{fps.capped && fps.capValue !== null ? `~${n(fps.capValue)} FPS` : 'none'}</dd></div>
         </dl>
       )}
@@ -107,49 +119,13 @@ function FlagTable({ result }: { result: AnalysisResult }) {
   );
 }
 
-// A basic shared-axis (0–100%) timeline of GPU vs CPU usage — enough to read
-// bottlenecking at a glance. Interactive uPlot timelines are a v2 item.
-function UsageTimeline({ result }: { result: AnalysisResult }) {
-  const W = 720;
-  const H = 120;
-  const series = [
-    { key: 'gpu.usage' as CanonicalKey, label: 'GPU usage', color: 'var(--accent)' },
-    { key: 'cpu.usageTotal' as CanonicalKey, label: 'CPU usage', color: 'var(--text-dim)' },
-  ].map((s) => ({ ...s, values: result.log.sensors[s.key]?.values ?? [] }))
-    .filter((s) => s.values.filter((v) => v !== null).length >= 2);
-
-  if (series.length === 0) return null;
-
-  const len = Math.max(...series.map((s) => s.values.length));
-  const x = (i: number) => (len <= 1 ? 0 : (i / (len - 1)) * W);
-  const y = (v: number) => H - (Math.min(100, Math.max(0, v)) / 100) * H;
-
-  return (
-    <Card className="nerd-card">
-      <h3 className="nerd-h">Utilization timeline</h3>
-      <svg className="nerd-spark" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="GPU and CPU usage over the session">
-        {series.map((s) => {
-          const pts = s.values
-            .map((v, i) => (v === null ? null : `${x(i).toFixed(1)},${y(v).toFixed(1)}`))
-            .filter((p): p is string => p !== null)
-            .join(' ');
-          return <polyline key={s.key} points={pts} fill="none" stroke={s.color} strokeWidth={2} vectorEffect="non-scaling-stroke" />;
-        })}
-      </svg>
-      <div className="nerd-legend">
-        {series.map((s) => (
-          <span key={s.key}><i style={{ background: s.color }} />{s.label}</span>
-        ))}
-      </div>
-    </Card>
-  );
-}
-
-export function NerdView({ result }: { result: AnalysisResult }) {
+export function NerdView({ result }: { result: AnalysisResult }): JSX.Element {
   return (
     <div className="nerd-view stack">
+      <WindowTimeline result={result} />
+      <WorstMoments worst={result.windows.worst} baseMs={result.windows.windows[0]?.window.startMs ?? 0} />
+      <CoreGrid cores={result.log.cores} />
       <SensorTable result={result} />
-      <UsageTimeline result={result} />
       <div className="nerd-cols">
         <FpsDetail result={result} />
         <FlagTable result={result} />
