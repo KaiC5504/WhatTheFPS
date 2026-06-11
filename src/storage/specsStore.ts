@@ -34,3 +34,21 @@ export function loadSpecs(): InferredSpecs | null {
     return null;
   }
 }
+
+// When the same machine is re-analyzed, the saved blob carries the user's manual edits and
+// wins — but a blob written by an older build can be missing fields this build now detects
+// (iGPU, DIMM count, RAM kit…). Backfill only the gaps from the fresh inference so new
+// detections surface without clobbering anything the user actually set.
+export function reconcileSpecs(fresh: InferredSpecs, saved: InferredSpecs): InferredSpecs {
+  const out: InferredSpecs = { ...fresh, ...saved };
+  for (const key of Object.keys(fresh) as (keyof InferredSpecs)[]) {
+    if (saved[key] == null && fresh[key] != null) Object.assign(out, { [key]: fresh[key] });
+  }
+  // igpuPresent is a derived boolean, never null — a saved `false` from a build that didn't
+  // detect iGPUs would otherwise hide a real one, so let a fresh detection flip it on.
+  if (!saved.igpuPresent && fresh.igpuPresent) {
+    out.igpuPresent = true;
+    if (saved.igpuModelGuess == null) out.igpuModelGuess = fresh.igpuModelGuess;
+  }
+  return out;
+}

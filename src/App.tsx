@@ -19,7 +19,7 @@ import { CompareTable } from './ui/CompareTable';
 import { useRuns } from './ui/useRuns';
 import { compareRuns } from './compare/diff';
 import { useAnalysis, type AnalysisStatus } from './ui/useAnalysis';
-import { loadSpecs, saveSpecs, EMPTY_SPECS } from './storage/specsStore';
+import { loadSpecs, saveSpecs, reconcileSpecs, EMPTY_SPECS } from './storage/specsStore';
 import { Button } from './ui/primitives';
 import './ui/App.css';
 
@@ -52,7 +52,11 @@ export function App() {
       saved.cpuModelGuess === fresh.cpuModelGuess &&
       saved.gpuModelGuess === fresh.gpuModelGuess;
     if (sameMachine) {
-      setSpecs(saved);
+      // Keep the user's edits, but let this build's detections fill any gaps the saved
+      // blob predates (iGPU, DIMM count), then heal the stored copy.
+      const restored = reconcileSpecs(fresh, saved);
+      setSpecs(restored);
+      saveSpecs(restored);
     } else {
       setSpecs(fresh);
       saveSpecs(fresh);

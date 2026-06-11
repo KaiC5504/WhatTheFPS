@@ -132,6 +132,8 @@ export function SpecsCard({ specs, onChange }: SpecsCardProps) {
           accept=".txt,.htm,.html,.TXT,.HTM"
           onChange={(e) => {
             const f = e.target.files?.[0];
+            // Reset so picking the same file again still fires onChange.
+            e.target.value = '';
             if (f) void importReport(f);
           }}
           style={{ display: 'none' }}
