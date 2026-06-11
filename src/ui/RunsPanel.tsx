@@ -51,7 +51,7 @@ export function RunsPanel(props: RunsPanelProps): JSX.Element {
         </div>
 
         {sorted.length === 0 ? (
-          <p className="u-dim">No saved runs yet — every analyzed log lands here automatically.</p>
+          <p className="u-dim">No saved runs yet — analyze a log and hit Save run to keep it here.</p>
         ) : (
           <ul className="runs-panel__list">
             {sorted.map((run) => (

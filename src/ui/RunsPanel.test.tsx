@@ -73,9 +73,9 @@ describe('RunsPanel', () => {
     expect(h.onClearAll).toHaveBeenCalled();
   });
 
-  it('empty state explains auto-save and disables Clear all', () => {
+  it('empty state explains manual save and disables Clear all', () => {
     setup([]);
-    expect(screen.getByText(/lands here automatically/i)).toBeInTheDocument();
+    expect(screen.getByText(/hit save run to keep it here/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /clear all/i })).toBeDisabled();
   });
 });
