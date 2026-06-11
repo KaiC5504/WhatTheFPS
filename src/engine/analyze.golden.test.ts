@@ -108,7 +108,7 @@ describe('analyze (golden, real logs)', () => {
 
   it('all sample logs analyze cleanly: no throw, 5 finite hero tiles, digest text, no invented numbers', () => {
     const logs = allSampleLogs();
-    expect(logs.length).toBe(13);
+    expect(logs.length).toBe(14);
 
     for (const rel of logs) {
       let r: AnalysisResult;
