@@ -1,6 +1,7 @@
 import type { CanonicalKey, DiagEvent, NormalizedLog, Stats, WindowAnalysis, WindowClassification } from '../types';
 import { makeEvent } from './events';
 import { windowMean } from '../windows/slice';
+import { computeStats } from '../stats/percentiles';
 
 const MIN_WINDOWS = 8;
 const TEMP_RISE_C = 10;
@@ -48,9 +49,11 @@ export function causeFanCurve(
     if (!flat) continue;
 
     // A fan that never went faster anywhere in the log might simply be maxed out —
-    // only call the curve out when the log itself proves headroom existed.
-    let sessionMax = 0;
-    for (const v of fan.values) if (v !== null && v > sessionMax) sessionMax = v;
+    // only call the curve out when the log itself proves headroom existed. p99 stands
+    // in for the max so a lone glitched sample (EC misread) can't fabricate headroom.
+    const fanVals = fan.values.filter((v): v is number => v !== null && Number.isFinite(v));
+    if (fanVals.length === 0) continue;
+    const sessionMax = computeStats(fanVals).p99;
     if (rpmEarly >= FAN_HEADROOM_FRAC * sessionMax) continue;
 
     const late = usable.slice(-q);

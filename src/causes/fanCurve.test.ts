@@ -55,7 +55,40 @@ describe('causeFanCurve', () => {
       ...tempsRamp.map((t, i) => makeWindow(i + 1, { metrics: { cpuTempC: t } })),
     ];
     const log = makeLog({ sensors: { 'fan.cpuRpm': perWindowRows([4000, 2200, 2200, 2200, 2200, 2200, 2200, 2200, 2200]) } });
-    const [e] = causeFanCurve(log, {}, makeWindowAnalysis(windows));
+    const events = causeFanCurve(log, {}, makeWindowAnalysis(windows));
+    expect(events).toHaveLength(1);
+    const [e] = events;
     expect(e.sentence).toContain('CPU');
+  });
+
+  it('fires for both pairs at once, GPU event first', () => {
+    const windows = [
+      makeWindow(0, { activity: 'idle' }),
+      ...tempsRamp.map((t, i) => makeWindow(i + 1, { metrics: { gpuTempC: t, cpuTempC: t } })),
+    ];
+    const log = makeLog({ sensors: {
+      'fan.gpuRpm': perWindowRows([3500, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000]),
+      'fan.cpuRpm': perWindowRows([4000, 2200, 2200, 2200, 2200, 2200, 2200, 2200, 2200]),
+    } });
+    const events = causeFanCurve(log, {}, makeWindowAnalysis(windows));
+    expect(events).toHaveLength(2);
+    expect(events[0].sentence).toContain('GPU');
+    expect(events[1].sentence).toContain('CPU');
+  });
+
+  it('stays silent when the flat level sits exactly at 90% of the session max', () => {
+    // 0.9 × 3000 = 2700 — the >= arm of the headroom gate
+    const { log, wa } = gpuFixture([3000, 2700, 2700, 2700, 2700, 2700, 2700, 2700, 2700]);
+    expect(causeFanCurve(log, {}, wa)).toEqual([]);
+  });
+
+  it('stays silent with only 7 usable gameplay windows', () => {
+    const temps7 = [60, 60, 62, 66, 70, 72, 74];
+    const windows = [
+      makeWindow(0, { activity: 'idle' }),
+      ...temps7.map((t, i) => makeWindow(i + 1, { metrics: { gpuTempC: t } })),
+    ];
+    const log = makeLog({ sensors: { 'fan.gpuRpm': perWindowRows([3500, 2000, 2000, 2000, 2000, 2000, 2000, 2000]) } });
+    expect(causeFanCurve(log, {}, makeWindowAnalysis(windows))).toEqual([]);
   });
 });
