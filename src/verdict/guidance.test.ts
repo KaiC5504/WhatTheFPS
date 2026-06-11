@@ -37,5 +37,7 @@ describe('buildGuidance', () => {
     expect(buildGuidance(makeLog({})).map((x) => x.what).join(' ')).toMatch(/drive activity/i);
     const log = makeLog({ sensors: { 'drive.activityPct': [5] } });
     expect(buildGuidance(log).map((x) => x.what).join(' ')).not.toMatch(/drive activity/i);
+    const log2 = makeLog({ sensors: { 'drive.readRateMbps': [100] } });
+    expect(buildGuidance(log2).map((x) => x.what).join(' ')).not.toMatch(/drive activity/i);
   });
 });

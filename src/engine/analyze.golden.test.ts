@@ -188,6 +188,8 @@ describe('analyze (golden, real logs)', () => {
     const NEW_TYPES = ['stutter', 'fan-curve', 'storage-stutter'];
     for (const rel of ['Intel + Nvidia/KaiC_ItTakesTwo.CSV', 'Intel + Nvidia/KaiC_NTE_undervolt-65_.CSV']) {
       const r = analyze(sample(rel));
+      // No new-type events fire on these logs today; this guards the honesty contract
+      // (windows on non-info events, "Sampled" wording, evidence present) for when they do.
       for (const e of r.events.filter((x) => NEW_TYPES.includes(x.type))) {
         // plan #2 timeline contract: non-info events must carry their windows
         if (e.severity !== 'info') expect(e.windowIndexes?.length, `${rel}: ${e.type}`).toBeGreaterThan(0);
