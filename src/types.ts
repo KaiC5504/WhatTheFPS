@@ -23,7 +23,7 @@ export type CanonicalKey =
   | 'cpu.tempPackage' | 'cpu.tempCoreMax' | 'cpu.tempCoreAvg' | 'cpu.usageTotal' | 'cpu.usageCoreMax'
   | 'cpu.clock' | 'cpu.clockEff' | 'cpu.power'
   // discrete (gaming) GPU
-  | 'gpu.temp' | 'gpu.hotspot' | 'gpu.memJunction' | 'gpu.usage'
+  | 'gpu.temp' | 'gpu.hotspot' | 'gpu.memJunction' | 'gpu.socTempC' | 'gpu.usage'
   | 'gpu.clock' | 'gpu.clockEff' | 'gpu.power' | 'gpu.powerLimit' | 'gpu.memUsagePct'
   | 'gpu.memControllerLoad'
   // integrated GPU (laptops)

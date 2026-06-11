@@ -38,3 +38,20 @@
   align-self: end;
   min-height: 38px;
 }
+
+.specs-card__report {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s4);
+  padding: var(--s3);
+  border: 1px dashed var(--border);
+  border-radius: var(--r-md);
+}
+
+.specs-card__report-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--bad);
+}

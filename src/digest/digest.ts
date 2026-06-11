@@ -4,6 +4,7 @@ import type {
   WindowAnalysis, SensorGuidance, Limiter, EvidenceTier,
 } from '../types';
 import { FLAG_LABELS } from '../windows/snapshot';
+import { lookupTempRange } from '../reference/tempRanges';
 
 const DEFAULT_GOAL = 'help me lower temps without losing FPS';
 
@@ -154,6 +155,25 @@ function timeSplitLine(wa: WindowAnalysis): string | null {
   return parts.length ? `Time split (${word} only): ${parts.join(', ')}` : null;
 }
 
+// One class-level calibration line so the receiving LLM doesn't judge a laptop log
+// against desktop expectations (or vice versa). Full mode only — compact stays lean.
+function typicalRangeLine(log: NormalizedLog, stats: Partial<Record<CanonicalKey, Stats>>): string | null {
+  const has = (k: CanonicalKey) => { const s = stats[k]; return !!s && s.count > 0; };
+  const hasCpu = has('cpu.tempPackage') || has('cpu.tempCoreMax') || has('cpu.tempCoreAvg');
+  const hasGpu = has('gpu.temp') || has('gpu.hotspot');
+  if (!hasCpu && !hasGpu) return null;
+  const parts: string[] = [];
+  if (hasCpu) {
+    const r = lookupTempRange('cpu', log.specs);
+    parts.push(`CPU load temps under ${r.warnAt} °C are typical, throttling starts near ${r.badAt} °C`);
+  }
+  if (hasGpu) {
+    const r = lookupTempRange('gpu', log.specs);
+    parts.push(`GPU edge under ${r.warnAt} °C is typical, throttling near ${r.badAt} °C`);
+  }
+  return `Typical for this class of hardware: ${parts.join('; ')}.`;
+}
+
 function frameTimesLine(log: NormalizedLog, stats: Partial<Record<CanonicalKey, Stats>>): string | null {
   const ft = stats['pm.frameTimeMs'];
   if (!ft || ft.count === 0) return null;
@@ -230,7 +250,7 @@ function render(
   const evidence = [
     coverageLine(windows),
     timeSplitLine(windows),
-    ...(mode === 'full' ? [frameTimesLine(log, stats), vramLine(log, stats)] : []),
+    ...(mode === 'full' ? [typicalRangeLine(log, stats), frameTimesLine(log, stats), vramLine(log, stats)] : []),
   ].filter((l): l is string => l !== null);
   if (evidence.length) {
     parts.push('');

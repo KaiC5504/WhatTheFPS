@@ -36,6 +36,7 @@ Sensors:
 
 Coverage: analyzed 2.7 min of gameplay out of 2.7 min logged (8 s windows)
 Time split (gameplay only): ambiguous 67% [measured], CPU-bound 17% [measured], GPU-bound 8% [measured], GPU-underutilized 8% [measured]
+Typical for this class of hardware: CPU load temps under 90 °C are typical, throttling starts near 100 °C; GPU edge under 80 °C is typical, throttling near 87 °C.
 Frame times (PresentMon): avg 56.1 ms, p99 1592.4 ms; session-wide per-frame 1% low 4.1 FPS (cumulative — includes loading/menus)
 
 Worst moments:

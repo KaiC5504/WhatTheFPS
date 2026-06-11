@@ -4,6 +4,7 @@ import type {
   WindowAnalysis, TimeSplit, Limiter,
 } from '../types';
 import { buildGuidance } from './guidance';
+import { lookupTempRange } from '../reference/tempRanges';
 
 const SEVERITY_RANK: Record<Severity, number> = { bad: 3, warn: 2, info: 1 };
 
@@ -92,12 +93,16 @@ function buildHero(log: NormalizedLog, stats: Partial<Record<CanonicalKey, Stats
   const gpuHotPeak = maxOf(stats, ['gpu.hotspot']);
   const gpuSub = gpuHotPeak !== null ? `hotspot ${Math.round(gpuHotPeak)}°C` : null;
 
+  const cpuRange = lookupTempRange('cpu', log.specs);
+  const gpuRange = lookupTempRange('gpu', log.specs);
   return [
     fpsTile,
     usageTile('cpu.usageTotal', 'CPU usage', avgOf(stats, 'cpu.usageTotal')),
-    tempTile('cpu.temp', 'CPU temp', cpuMain, maxOf(stats, ['cpu.tempPackage', 'cpu.tempCoreMax']), cpuSub, 90, 100),
+    tempTile('cpu.temp', 'CPU temp', cpuMain, maxOf(stats, ['cpu.tempPackage', 'cpu.tempCoreMax']), cpuSub,
+      cpuRange.warnAt, cpuRange.badAt),
     usageTile('gpu.usage', 'GPU usage', avgOf(stats, 'gpu.usage')),
-    tempTile('gpu.temp', 'GPU temp', avgOf(stats, 'gpu.temp'), maxOf(stats, ['gpu.temp']), gpuSub, 85, 90),
+    tempTile('gpu.temp', 'GPU temp', avgOf(stats, 'gpu.temp'), maxOf(stats, ['gpu.temp']), gpuSub,
+      gpuRange.warnAt, gpuRange.badAt),
   ];
 }
 
