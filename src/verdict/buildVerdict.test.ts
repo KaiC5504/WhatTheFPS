@@ -83,6 +83,39 @@ function log_with(sensors: Record<string, number[]>) {
   return makeLog({ sensors, fps: { source: 'displayed', stats: computeStats([100, 101, 99]) } });
 }
 
+describe('class-aware temp tiles', () => {
+  it('a desktop Ryzen X3D at a 92 °C peak is over its 89 °C class limit', () => {
+    const sensors = { 'cpu.tempPackage': [88, 92] };
+    const log = log_with(sensors);
+    log.specs = { ...log.specs, cpuVendor: 'amd', cpuModelGuess: 'AMD Ryzen 7 7800X3D', isLaptop: false };
+    const v = buildVerdict(log, statsFor(sensors), [], makeWindowAnalysis([]));
+    expect(v.hero.find((h) => h.key === 'cpu.temp')!.severity).toBe('bad');
+  });
+
+  it('the same 92 °C peak on a mobile Ryzen (100 °C class) is only warn', () => {
+    const sensors = { 'cpu.tempPackage': [88, 92] };
+    const log = log_with(sensors);
+    log.specs = { ...log.specs, cpuVendor: 'amd', cpuModelGuess: 'AMD Ryzen 9 8940HX', isLaptop: true };
+    const v = buildVerdict(log, statsFor(sensors), [], makeWindowAnalysis([]));
+    expect(v.hero.find((h) => h.key === 'cpu.temp')!.severity).toBe('warn');
+  });
+
+  it('a laptop GeForce at an 88 °C peak crosses the 87 °C laptop class limit', () => {
+    const sensors = { 'gpu.temp': [84, 88] };
+    const log = log_with(sensors);
+    log.specs = { ...log.specs, gpuVendor: 'nvidia', isLaptop: true };
+    const v = buildVerdict(log, statsFor(sensors), [], makeWindowAnalysis([]));
+    expect(v.hero.find((h) => h.key === 'gpu.temp')!.severity).toBe('bad');
+  });
+
+  it('unknown vendors keep the previous generic thresholds', () => {
+    const sensors = { 'cpu.tempPackage': [88, 92], 'gpu.temp': [85, 86] };
+    const v = buildVerdict(log_with(sensors), statsFor(sensors), [], makeWindowAnalysis([]));
+    expect(v.hero.find((h) => h.key === 'cpu.temp')!.severity).toBe('warn'); // 90 ≤ 92 < 100
+    expect(v.hero.find((h) => h.key === 'gpu.temp')!.severity).toBe('warn'); // 85 ≤ 86 < 90
+  });
+});
+
 describe('time-split headline', () => {
   it('GPU-dominant', () => {
     const wa = makeWindowAnalysis([0, 1, 2, 3].map((i) => makeWindow(i, { limiter: 'gpu', metrics: { fpsAvg: 100 } })));
