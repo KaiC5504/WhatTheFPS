@@ -76,6 +76,9 @@
   height: 3px;
   border-radius: var(--r-pill);
 }
+/* line swatches mirror the chart strokes: FPS in accent, overlay in dim text */
+.tl-legend__fps { background: var(--accent); }
+.tl-legend__sensor { background: var(--text-dim); }
 .tl-legend__cpu { background: var(--warn); }
 .tl-legend__throttle { background: var(--bad); }
 /* diamond, matching the in-canvas event markers */

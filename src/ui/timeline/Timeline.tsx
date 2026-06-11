@@ -81,7 +81,10 @@ export function Timeline({ result, selection, onSelect, onClear }: TimelineProps
     const sensor = chip ? log.sensors[chip.key] : undefined;
     const rows = decimateRows(log.rowCount, [fpsSeries, sensor?.values]);
 
-    const xs = rows.map((r) => (log.timesMs[r] ?? 0) / 1000);
+    // HWiNFO timestamps are absolute (ms since midnight); plot elapsed time from
+    // the log start so the axis reads 0:00 onward, not the wall-clock time of day.
+    const t0 = log.timesMs[0] ?? 0;
+    const xs = rows.map((r) => ((log.timesMs[r] ?? t0) - t0) / 1000);
     const ys: (number | null)[][] = [];
     const series: uPlot.Series[] = [{}];
     const axisFont = `11px ${theme.fontMono}`;
@@ -126,8 +129,8 @@ export function Timeline({ result, selection, onSelect, onClear }: TimelineProps
             onClearRef.current();
             return;
           }
-          const tA = u.posToVal(u.select.left, 'x') * 1000;
-          const tB = u.posToVal(u.select.left + u.select.width, 'x') * 1000;
+          const tA = u.posToVal(u.select.left, 'x') * 1000 + t0;
+          const tB = u.posToVal(u.select.left + u.select.width, 'x') * 1000 + t0;
           const a = timeToRow(log.timesMs, tA);
           const b = timeToRow(log.timesMs, tB);
           onSelectRef.current(Math.min(a, b), Math.max(a, b));
@@ -198,6 +201,8 @@ export function Timeline({ result, selection, onSelect, onClear }: TimelineProps
         {selection && <Button variant="ghost" onClick={onClear}>Clear</Button>}
       </form>
       <div className="tl-legend">
+        {log.fps.source !== 'none' && <span><i className="tl-legend__fps" />FPS</span>}
+        {chip && <span><i className="tl-legend__sensor" />{chip.label}</span>}
         <span><i className="tl-legend__cpu" />CPU-bound</span>
         <span><i className="tl-legend__throttle" />Throttling</span>
         <span><i className="tl-legend__event" />Event</span>

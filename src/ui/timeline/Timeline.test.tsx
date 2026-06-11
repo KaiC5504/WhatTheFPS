@@ -142,6 +142,41 @@ describe('Timeline', () => {
     expect(screen.getByText(/smooth sailing/i)).toBeInTheDocument();
   });
 
+  it('labels the always-on FPS line and the active sensor overlay in the legend', () => {
+    const { container } = render(<Timeline result={timedResult()} selection={null} onSelect={noop} onClear={noop} />);
+    const legend = container.querySelector('.tl-legend');
+    expect(legend).toHaveTextContent('FPS');
+    expect(legend).toHaveTextContent('GPU temp'); // the default overlay
+  });
+
+  it('drops the FPS legend entry when no framerate was logged', () => {
+    const result = timedResult();
+    result.log.fps = { ...result.log.fps, source: 'none', series: [], stats: null };
+    const { container } = render(<Timeline result={result} selection={null} onSelect={noop} onClear={noop} />);
+    const legend = container.querySelector('.tl-legend');
+    expect(legend).not.toHaveTextContent('FPS');
+    expect(legend).toHaveTextContent('GPU temp'); // sensor overlay still labeled
+  });
+
+  it('plots elapsed time from the log start, not wall-clock time of day', () => {
+    const result = timedResult();
+    // HWiNFO timestamps are ms-since-midnight; a 17:26:40 start would otherwise
+    // render the axis as "1046:40" instead of "0:00".
+    result.log.timesMs = [62800000, 62802000, 62804000, 62806000, 62808000, 62810000];
+    render(<Timeline result={result} selection={null} onSelect={noop} onClear={noop} />);
+    expect(instances[0].data[0]).toEqual([0, 2, 4, 6, 8, 10]);
+  });
+
+  it('brush still maps to the right rows when the log starts at a wall-clock offset', () => {
+    const onSelect = vi.fn();
+    const result = timedResult();
+    result.log.timesMs = [62800000, 62802000, 62804000, 62806000, 62808000, 62810000];
+    render(<Timeline result={result} selection={null} onSelect={onSelect} onClear={noop} />);
+    // 600 px over 0–10 s elapsed: px 120–480 = 2 s–8 s → rows 1–4
+    instances[0].fireSelect(120, 360);
+    expect(onSelect).toHaveBeenCalledWith(1, 4);
+  });
+
   it('renders nothing without windows', () => {
     const { container } = render(
       <Timeline result={{ ...timedResult(), windows: makeWindowAnalysis([]) }} selection={null} onSelect={noop} onClear={noop} />,
