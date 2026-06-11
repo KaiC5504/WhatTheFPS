@@ -8,6 +8,10 @@ export interface SpikeCluster { startRow: number; endRow: number; peakMs: number
 const MIN_SAMPLES = 20;
 const SPIKE_FACTOR = 2;  // a sample 2× the gameplay median counts as a spike
 const MIN_RUN = 2;       // ≥2 consecutive spiked polls = a cluster, not a one-poll artefact
+// A poll averaging over 100 ms (<10 FPS) is a freeze/load/scene-cut, not micro-stutter.
+// Benchmarks (e.g. Superposition) cycle through scenes with multi-second load stalls that
+// would otherwise dominate p99/avg and fake a stutter verdict — exclude them from pacing math.
+const STALL_CEIL_MS = 100;
 
 // Row indexes covered by gameplay windows — pacing math must ignore menus/loading,
 // where frame times legitimately spike.
@@ -24,7 +28,7 @@ function inPlay(series: (number | null)[], rows: Set<number>): number[] {
   const out: number[] = [];
   for (let i = 0; i < series.length; i++) {
     const v = series[i];
-    if (rows.has(i) && v !== null && Number.isFinite(v) && v > 0) out.push(v);
+    if (rows.has(i) && v !== null && Number.isFinite(v) && v > 0 && v <= STALL_CEIL_MS) out.push(v);
   }
   return out;
 }
@@ -51,7 +55,7 @@ export function spikeRows(series: (number | null)[], rows: Set<number>): number[
   const out: number[] = [];
   for (let i = 0; i < series.length; i++) {
     const v = series[i];
-    if (rows.has(i) && v !== null && v > threshold) out.push(i);
+    if (rows.has(i) && v !== null && v > threshold && v <= STALL_CEIL_MS) out.push(i);
   }
   return out;
 }

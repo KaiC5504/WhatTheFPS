@@ -36,6 +36,12 @@ export function buildGuidance(log: NormalizedLog): SensorGuidance[] {
       how: 'Include the CPU/GPU fan RPM sensors (motherboard/EC and GPU sections) in the log — they tell whether cooling has headroom or is already maxed.',
     });
   }
+  if (!log.sensors['drive.activityPct'] && !log.sensors['drive.readRateMbps']) {
+    out.push({
+      what: 'drive activity (storage-stutter check)',
+      how: 'Include the per-drive "Total Activity" and "Read Rate" sensors in the log — they reveal asset-streaming stutter.',
+    });
+  }
   if (!log.sensors['gpu.coreVoltage']) {
     out.push({
       what: 'GPU core voltage',

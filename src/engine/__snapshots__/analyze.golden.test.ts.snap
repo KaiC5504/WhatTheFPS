@@ -28,6 +28,7 @@ Sensors:
 - GPU mem usage: avg 44.9%, 1% low 12.4%, 5% low 12.5%
 - RAM load: avg 36.1%, 1% low 27.5%, 5% low 27.6%
 - CPU core usage (max): avg 77.2%, 1% low 31.3%, 5% low 42.3%
+- Drive temp (worst): avg 70 °C, p95 70 °C, p99 70 °C, max 70 °C
 - FPS (source: Framerate Displayed (avg)): avg 43.5, 1% low 0.6, 5% low 11
 - FPS split: presented avg 43.8, displayed avg 43.5
 

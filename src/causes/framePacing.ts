@@ -2,8 +2,12 @@ import type { CanonicalKey, DiagEvent, NormalizedLog, Severity, Stats, WindowAna
 import { makeEvent } from './events';
 import { gameplayRowSet, rowsToWindowIndexes, spikeClusters, spikeRows, stutterIndex } from './pacing';
 
-const WARN_INDEX = 1.8;
-const BAD_INDEX = 2.5;
+// Index = p99/avg of gameplay frame times (stalls over 100 ms excluded in pacing.ts).
+// Set at 3.5 because clean fixed-scene benchmarks (Superposition) still leave ~3× scene-cut
+// hitches after the stall ceiling; the cluster path (WARN_CLUSTERS) catches sustained stutter
+// that the higher index gate alone would miss.
+const WARN_INDEX = 3.5;
+const BAD_INDEX = 4.0;
 const WARN_CLUSTERS = 3;
 
 const FIX = 'Cap FPS slightly below your average, update GPU drivers, and close recording/overlay apps; if it persists in one game, suspect shader-compilation stutter.';
