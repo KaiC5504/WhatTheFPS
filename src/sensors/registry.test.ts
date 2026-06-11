@@ -116,6 +116,7 @@ describe('findSensor', () => {
     expect(def!.multi).toBe('max');
     expect(def!.domain).toBe('drive');
     expect(findSensor('CPU VDDCR_VDD VRM (SVI3 TFN)')!.multi).toBe('max');
+    expect(findSensor('CPU VDDCR_VDD VRM (SVI3 TFN)')!.domain).toBe('cpu');
     expect(findSensor('GPU Temperature')!.multi).toBeUndefined();
   });
 });
