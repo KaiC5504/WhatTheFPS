@@ -1,0 +1,103 @@
+.tl-chart {
+  width: 100%;
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+/* uPlot's select box is a bare div; tint it with the accent wash token */
+.tl-chart .u-select {
+  background: var(--accent-wash);
+}
+
+.tl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+}
+.tl-chip {
+  font: inherit;
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  padding: var(--s1) var(--s3);
+  cursor: pointer;
+}
+.tl-chip:hover {
+  background: var(--surface-hover);
+}
+.tl-chip.is-active {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.tl-range {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  margin-top: var(--s3);
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+}
+.tl-range label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.tl-range input {
+  font: inherit;
+  font-family: var(--font-mono);
+  color: var(--text);
+  background: var(--inset);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: var(--s1) var(--s2);
+}
+
+.tl-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s5);
+  margin-top: var(--s3);
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+}
+.tl-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.tl-legend i {
+  width: 14px;
+  height: 3px;
+  border-radius: var(--r-pill);
+}
+.tl-legend__cpu { background: var(--warn); }
+.tl-legend__throttle { background: var(--bad); }
+/* diamond, matching the in-canvas event markers */
+.tl-legend__event {
+  width: 8px;
+  height: 8px;
+  border-radius: 0;
+  background: var(--warn);
+  transform: rotate(45deg);
+}
+/* downward triangle, matching the in-canvas worst-moment ticks */
+.tl-legend__worst {
+  width: 0;
+  height: 0;
+  border-radius: 0;
+  background: transparent;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid var(--bad);
+}
+
+.tl-caption {
+  margin-top: var(--s2);
+  font-size: var(--text-xs);
+}
