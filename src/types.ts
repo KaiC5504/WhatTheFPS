@@ -180,6 +180,20 @@ export interface WindowAnalysis {
   activityKind: 'gameplay' | 'workload';  // 'workload' when no FPS was logged (benchmark logs)
 }
 
+// A user-brushed row range of the log, analyzed with the same stats machinery
+// as the whole-log view. timeSplit reuses existing window classifications and
+// covers only windows fully inside the range.
+export interface SelectionAnalysis {
+  startRow: number;
+  endRow: number;
+  startMs: number;
+  endMs: number;
+  fps: Stats | null;
+  sensors: Partial<Record<CanonicalKey, Stats>>;
+  timeSplit: TimeSplit | null;
+  windowCount: number;
+}
+
 export type Health = 'good' | 'warn' | 'bad';
 export type MascotMood = 'chill' | 'concerned' | 'panic';
 export interface HeroNumber { key: string; label: string; value: string; severity: Severity; sub?: string; }
