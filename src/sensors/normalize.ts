@@ -12,12 +12,14 @@ const NONE_FPS: FpsData = {
 };
 
 // dGPU section markers (discrete Nvidia/Radeon) vs iGPU section markers (Intel/AMD APU).
-const DGPU_ANCHOR = /(12VHPWR|Memory Junction Temperature|Hot Spot Temperature)/i;
-const IGPU_ANCHOR = /(VDDCR_GFX|iGPU VID|STAPM|GPU Core Temperature|GPU Total Usage|GPU Utilization)/i;
+// 'GPU Utilization'/'GPU Total Usage' are NOT iGPU anchors: Radeon dGPUs use the same
+// labels, so they are section-assigned instead (see AMBIGUOUS).
+const DGPU_ANCHOR = /(12VHPWR|Memory Junction Temperature|Hot Spot Temperature|Temperature \(Hot Spot\)|Hotspot Temperature|GPU Memory Temperature)/i;
+const IGPU_ANCHOR = /(VDDCR_GFX|iGPU VID|STAPM|GPU Core Temperature)/i;
 
 // Keys that can legitimately appear in both the discrete and integrated GPU blocks.
 const AMBIGUOUS = new Set<CanonicalKey>([
-  'gpu.temp', 'gpu.clock', 'gpu.clockEff', 'gpu.usage', 'gpu.memUsagePct',
+  'gpu.temp', 'gpu.clock', 'gpu.clockEff', 'gpu.usage', 'gpu.memUsagePct', 'gpu.socTempC',
   'vram.allocatedMb', 'vram.availableMb', 'vram.d3dDedicatedMb', 'vram.d3dDynamicMb',
 ]);
 // AMD APUs put 'Throttle Reason - *' in the iGPU block; an all-AMD rig puts them on the dGPU.

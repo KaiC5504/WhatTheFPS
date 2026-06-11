@@ -150,19 +150,53 @@ describe('core matrix', () => {
 
 describe('ambiguity for new keys', () => {
   it('drops iGPU-section VRAM and throttle-reason flags, keeps dGPU-section ones', () => {
-    // dGPU block (Hot Spot anchor) then iGPU block (GPU Utilization anchor); the
-    // VRAM/flag columns appear in both.
+    // dGPU copies (Hot Spot anchor) flank the VDDCR_GFX iGPU anchor; the VRAM/flag columns
+    // appear in both. GPU Utilization stopped being an iGPU anchor, so VDDCR_GFX marks the iGPU.
     const text =
       'Date,Time,"GPU Memory Allocated [MB]","Throttle Reason - Power [Yes/No]",' +
-      '"GPU Hot Spot Temperature [°C]","GPU Utilization [%]",' +
+      '"GPU Hot Spot Temperature [°C]","GPU Core Voltage (VDDCR_GFX) [V]",' +
       '"GPU Memory Allocated [MB]","Throttle Reason - Power [Yes/No]"\n' +
-      '9.6.2026,12:00:00.000,4000,No,80,30,2000,Yes\n';
+      '9.6.2026,12:00:00.000,4000,No,80,0.7,2000,Yes\n';
     const csv = parseCsv(text);
     const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
     expect(log.sensors['vram.allocatedMb']).toBeDefined();   // dGPU instance claimed
     expect(log.sensors['vram.allocatedMb']!.values).toEqual([4000]);
     expect(log.flags['flag.gpu.perfLimitPower']).toBeDefined();
     expect(log.unknownColumns.filter((c) => c.includes('GPU Memory Allocated'))).toHaveLength(1);
+  });
+});
+
+describe('AMD GPU usage section assignment', () => {
+  it('claims gpu.usage for a Radeon dGPU block and igpu.usage for an APU block', () => {
+    const text =
+      'Date,Time,"GPU Temperature (Hot Spot) [°C]","GPU Utilization [%]",' +
+      '"GPU Core Voltage (VDDCR_GFX) [V]","GPU Utilization [%]"\n' +
+      '9.6.2026,12:00:00.000,85,97,0.7,3\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.sensors['gpu.usage']!.values).toEqual([97]);
+    expect(log.sensors['igpu.usage']!.values).toEqual([3]);
+  });
+
+  it('an iGPU-only log (no dGPU anchors) still lands on igpu.usage', () => {
+    const text =
+      'Date,Time,"GPU Core Voltage (VDDCR_GFX) [V]","GPU Total Usage [%]"\n' +
+      '9.6.2026,12:00:00.000,0.7,12\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.sensors['igpu.usage']!.values).toEqual([12]);
+    expect(log.sensors['gpu.usage']).toBeUndefined();
+  });
+
+  it('drops an iGPU-section SoC temperature rather than letting it claim the dGPU key', () => {
+    const text =
+      'Date,Time,"GPU Temperature (Hot Spot) [°C]","GPU SoC Temperature [°C]",' +
+      '"GPU Core Voltage (VDDCR_GFX) [V]","GPU SoC Temperature [°C]"\n' +
+      '9.6.2026,12:00:00.000,85,70,0.7,55\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.sensors['gpu.socTempC']!.values).toEqual([70]);
+    expect(log.unknownColumns.filter((c) => c.includes('GPU SoC Temperature'))).toHaveLength(1);
   });
 });
 

@@ -31,9 +31,16 @@ const DEFS: SensorDef[] = [
   { key: 'cpu.tempPackage', domain: 'cpu', kind: 'numeric', label: 'CPU Package', unit: '°C',
     match: eq('CPU Package', 'CPU (Tctl/Tdie)') },
   { key: 'cpu.tempCoreMax', domain: 'cpu', kind: 'numeric', label: 'CPU Core Max', unit: '°C',
-    match: eq('Core Max', 'CPU CCD1 (Tdie)') },
+    // CCD2: dual-CCD desktop Ryzen (5900X/7950X class); provisional, HWiNFO forum sensor
+    // list — no dual-CCD log in repo. multi: dual-CCD logs carry both CCDs, so the hotter
+    // one is the core max. In-repo single-CCD AMD logs match only CCD1, so the merge is inert.
+    multi: 'max',
+    match: eq('Core Max', 'CPU CCD1 (Tdie)', 'CPU CCD2 (Tdie)') },
   { key: 'cpu.tempCoreAvg', domain: 'cpu', kind: 'numeric', label: 'CPU Core Avg', unit: '°C',
-    match: eq('Core Temperatures (avg)', 'CPU Core Temperatures (avg)') },
+    // CPU Die (average): verified on the in-repo A16 mobile Ryzen logs (also desktop Ryzen
+    // wording). On those logs it precedes Core Temperatures (avg), so column-order-first-wins
+    // makes it the core-avg source — a ~1-2 °C nerd-mode shift, no golden assertion depends on it.
+    match: eq('Core Temperatures (avg)', 'CPU Core Temperatures (avg)', 'CPU Die (average)') },
   // CPU usage
   { key: 'cpu.usageTotal', domain: 'cpu', kind: 'numeric', label: 'Total CPU Usage', unit: '%',
     match: eq('Total CPU Usage') },
@@ -50,9 +57,15 @@ const DEFS: SensorDef[] = [
 
   // discrete GPU temps — specific first
   { key: 'gpu.hotspot', domain: 'gpu', kind: 'numeric', label: 'GPU Hot Spot', unit: '°C',
-    match: eq('GPU Hot Spot Temperature') },
+    // Radeon wording variants; provisional: HWiNFO forum, no Radeon dGPU log in repo.
+    match: eq('GPU Hot Spot Temperature', 'GPU Temperature (Hot Spot)', 'GPU Hotspot Temperature') },
   { key: 'gpu.memJunction', domain: 'gpu', kind: 'numeric', label: 'GPU Memory Junction', unit: '°C',
-    match: eq('GPU Memory Junction Temperature') },
+    // GPU Memory Temperature: Radeon GDDR junction wording; provisional.
+    match: eq('GPU Memory Junction Temperature', 'GPU Memory Temperature') },
+  // Radeon SoC die — no NVIDIA equivalent, so its own key; provisional (in-repo AMD logs
+  // expose GPU SoC Clock, not GPU SoC Temperature).
+  { key: 'gpu.socTempC', domain: 'gpu', kind: 'numeric', label: 'GPU SoC', unit: '°C',
+    match: eq('GPU SoC Temperature') },
   // iGPU-only Intel temp label (unambiguous, so resolve directly)
   { key: 'igpu.temp', domain: 'igpu', kind: 'numeric', label: 'iGPU Temperature', unit: '°C',
     match: eq('GPU Core Temperature') },
@@ -60,12 +73,11 @@ const DEFS: SensorDef[] = [
   { key: 'gpu.temp', domain: 'gpu', kind: 'numeric', label: 'GPU Temperature', unit: '°C',
     match: eq('GPU Temperature') },
 
-  // discrete GPU usage
+  // discrete GPU usage. 'GPU Utilization'/'GPU Total Usage' are AMD wording used by BOTH
+  // Radeon dGPUs and APU iGPUs (verified on in-repo A16 APU logs) — normalize assigns by
+  // section. (They used to resolve straight to igpu.usage, which misfiled all-AMD desktops.)
   { key: 'gpu.usage', domain: 'gpu', kind: 'numeric', label: 'GPU Usage', unit: '%',
-    match: eq('GPU Core Load') },
-  // AMD iGPU usage label
-  { key: 'igpu.usage', domain: 'igpu', kind: 'numeric', label: 'iGPU Usage', unit: '%',
-    match: eq('GPU Utilization', 'GPU Total Usage') },
+    match: eq('GPU Core Load', 'GPU Utilization', 'GPU Total Usage') },
   // GPU memory utilization (percent)
   { key: 'gpu.memUsagePct', domain: 'gpu', kind: 'numeric', label: 'GPU Memory Usage', unit: '%',
     match: eq('GPU Memory Usage') },
@@ -79,7 +91,8 @@ const DEFS: SensorDef[] = [
   { key: 'gpu.powerLimit', domain: 'gpu', kind: 'numeric', label: 'GPU Power Limit', unit: 'W',
     match: eq('GPU Power Limit (rated)') },
   { key: 'gpu.power', domain: 'gpu', kind: 'numeric', label: 'GPU Power', unit: 'W',
-    match: eq('GPU Power') },
+    // GPU ASIC Power: Radeon total-chip power; provisional.
+    match: eq('GPU Power', 'GPU ASIC Power') },
 
   // discrete GPU voltage — the AMD APU rail 'GPU Core Voltage (VDDCR_GFX)' is deliberately
   // NOT matched: it's the iGPU and would shadow the dGPU value on hybrid laptops

@@ -134,4 +134,25 @@ describe('findSensor', () => {
     expect(findSensor('GPU Fan')!.multi).toBe('max');
     expect(findSensor('GPU', 'RPM')!.multi).toBe('max');
   });
+  it('maps desktop Ryzen CPU temperature variants', () => {
+    expect(key('CPU CCD2 (Tdie)')).toBe('cpu.tempCoreMax');
+    expect(key('CPU Die (average)')).toBe('cpu.tempCoreAvg');
+    // dual-CCD parts log both CCDs; the def aggregates elementwise max (plan #3 machinery)
+    expect(findSensor('CPU CCD2 (Tdie)')?.multi).toBe('max');
+  });
+  it('maps Radeon discrete-GPU wording onto the NVIDIA-equivalent keys', () => {
+    expect(key('GPU Temperature (Hot Spot)')).toBe('gpu.hotspot');
+    expect(key('GPU Hotspot Temperature')).toBe('gpu.hotspot');
+    expect(key('GPU Memory Temperature')).toBe('gpu.memJunction');
+    expect(key('GPU ASIC Power')).toBe('gpu.power');
+  });
+  it('gives the Radeon SoC die its own key', () => {
+    const def = findSensor('GPU SoC Temperature');
+    expect(def?.key).toBe('gpu.socTempC');
+    expect(def?.unit).toBe('°C');
+  });
+  it('routes AMD GPU usage through the ambiguous discrete key, not straight to the iGPU', () => {
+    expect(key('GPU Utilization')).toBe('gpu.usage');
+    expect(key('GPU Total Usage')).toBe('gpu.usage');
+  });
 });
