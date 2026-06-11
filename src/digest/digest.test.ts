@@ -112,8 +112,8 @@ describe('buildDigest', () => {
       'cpu.coreVoltage': [1.15, 1.2, 1.18, 1.22, 1.25],
     }) };
     const d = buildDigest({ ...base, stats });
-    expect(d.compact).toMatch(/CPU fan: avg \d+ RPM, p95 \d+ RPM, p99 \d+ RPM, max 3600 RPM/);
-    expect(d.compact).toMatch(/GPU fan: avg \d+ RPM.*max 3000 RPM/);
+    expect(d.compact).toMatch(/CPU fan \(max\): avg \d+ RPM, p95 \d+ RPM, p99 \d+ RPM, max 3600 RPM/);
+    expect(d.compact).toMatch(/GPU fan \(max\): avg \d+ RPM.*max 3000 RPM/);
     expect(d.full).toMatch(/GPU core voltage: avg 0\.897 V.*max 0\.920 V/);
     expect(d.full).toMatch(/CPU core voltage: avg 1\.200 V/);
     expect(d.compact).not.toMatch(/core voltage/);

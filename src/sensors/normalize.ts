@@ -145,7 +145,7 @@ export function normalize(columns: ColumnMeta[], rows: string[][], decimal: Deci
       continue;
     }
 
-    const def = findSensor(col.name);
+    const def = findSensor(col.name, col.unit);
     if (!def) {
       unknownColumns.push(col.raw);
       continue;

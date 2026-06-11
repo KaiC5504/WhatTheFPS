@@ -17,6 +17,8 @@ Sensors:
 - GPU temp: avg 76.3 °C, p95 81.6 °C, p99 82.4 °C, max 82.5 °C
 - GPU hotspot: avg 85.2 °C, p95 91.6 °C, p99 92.7 °C, max 93.2 °C
 - GPU clock: avg 2240 MHz, p95 2250 MHz, p99 2250 MHz, max 2250 MHz
+- CPU fan (max): avg 4290 RPM, p95 4668 RPM, p99 4680 RPM, max 4740 RPM
+- GPU fan (max): avg 4415 RPM, p95 4920 RPM, p99 4920 RPM, max 4980 RPM
 - CPU usage: avg 11.2%, 1% low 7.5%, 5% low 7.9%
 - GPU usage: avg 74.6%, 1% low 0%, 5% low 0%
 - CPU clock: avg 2721.8 MHz, p95 3541.3 MHz, p99 3822.7 MHz, max 3869.1 MHz
@@ -45,7 +47,6 @@ Detected events:
 
 Missing data that would sharpen this:
 - finer polling (this log is ~2002 ms per sample) — Set the HWiNFO logging interval to 500–1000 ms for diagnosis runs.
-- fan speeds — Include the CPU/GPU fan RPM sensors (motherboard/EC and GPU sections) in the log — they tell whether cooling has headroom or is already maxed.
 
 Context (fill in for better advice):
 - Game, settings & resolution:

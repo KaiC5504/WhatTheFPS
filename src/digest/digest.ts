@@ -26,8 +26,8 @@ const COMPACT_SENSORS: SensorLine[] = [
   { key: 'gpu.temp', label: 'GPU temp', unit: '°C', kind: 'level' },
   { key: 'gpu.hotspot', label: 'GPU hotspot', unit: '°C', kind: 'level' },
   { key: 'gpu.clock', label: 'GPU clock', unit: 'MHz', kind: 'level' },
-  { key: 'fan.cpuRpm', label: 'CPU fan', unit: 'RPM', kind: 'level', digits: 0 },
-  { key: 'fan.gpuRpm', label: 'GPU fan', unit: 'RPM', kind: 'level', digits: 0 },
+  { key: 'fan.cpuRpm', label: 'CPU fan (max)', unit: 'RPM', kind: 'level', digits: 0 },
+  { key: 'fan.gpuRpm', label: 'GPU fan (max)', unit: 'RPM', kind: 'level', digits: 0 },
   { key: 'cpu.usageTotal', label: 'CPU usage', unit: '%', kind: 'usage' },
   { key: 'gpu.usage', label: 'GPU usage', unit: '%', kind: 'usage' },
 ];

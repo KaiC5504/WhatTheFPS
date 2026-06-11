@@ -7,6 +7,7 @@ export interface SensorDef {
   label: string;
   unit: string | null;
   multi?: 'max';                    // merge ALL matching columns into one per-row-max series
+  unitGate?: string;                // match only when the column's bracketed unit equals this (lower-cased)
   match: (name: string) => boolean; // receives a lower-cased name
 }
 
@@ -88,11 +89,18 @@ const DEFS: SensorDef[] = [
   { key: 'cpu.coreVoltage', domain: 'cpu', kind: 'numeric', label: 'CPU Core Voltage', unit: 'V',
     match: eq('Core VIDs (avg)', 'CPU VDDCR_VDD Voltage (SVI3 TFN)', 'CPU Core Voltage (SVI2 TFN)', 'Vcore') },
 
-  // fans (motherboard/EC and GPU blocks)
-  { key: 'fan.cpuRpm', domain: 'cpu', kind: 'numeric', label: 'CPU Fan', unit: 'RPM',
-    match: eq('CPU Fan', 'CPU Fan Speed') },
-  { key: 'fan.gpuRpm', domain: 'gpu', kind: 'numeric', label: 'GPU Fan', unit: 'RPM',
-    match: eq('GPU Fan', 'GPU Fan1', 'GPU Fan 1', 'GPU Fan Speed') },
+  // fans (motherboard/EC and GPU blocks) — a rig can carry several (dual GPU fans);
+  // the merged series tracks the hardest-working one per row
+  { key: 'fan.cpuRpm', domain: 'cpu', kind: 'numeric', label: 'CPU Fan (max)', unit: 'RPM',
+    multi: 'max', match: eq('CPU Fan', 'CPU Fan Speed') },
+  { key: 'fan.gpuRpm', domain: 'gpu', kind: 'numeric', label: 'GPU Fan (max)', unit: 'RPM',
+    multi: 'max', match: eq('GPU Fan', 'GPU Fan1', 'GPU Fan 1', 'GPU Fan Speed') },
+  // ASUS NB EC labels fan tachs with bare 'CPU [RPM]' / 'GPU [RPM]' — the unit is the
+  // only thing marking them as fans, so these defs are unit-gated
+  { key: 'fan.cpuRpm', domain: 'cpu', kind: 'numeric', label: 'CPU Fan (max)', unit: 'RPM',
+    multi: 'max', unitGate: 'rpm', match: eq('CPU') },
+  { key: 'fan.gpuRpm', domain: 'gpu', kind: 'numeric', label: 'GPU Fan (max)', unit: 'RPM',
+    multi: 'max', unitGate: 'rpm', match: eq('GPU') },
 
   // VRAM in MB — these names exist in both dGPU and iGPU blocks; normalize disambiguates
   { key: 'vram.allocatedMb', domain: 'gpu', kind: 'numeric', label: 'GPU Memory Allocated', unit: 'MB',
@@ -169,8 +177,12 @@ const DEFS: SensorDef[] = [
     match: eq('Throttle Reason - Current') },
 ];
 
-export function findSensor(name: string): SensorDef | null {
+export function findSensor(name: string, unit?: string | null): SensorDef | null {
   const lower = name.toLowerCase();
-  for (const def of DEFS) if (def.match(lower)) return def;
+  const u = unit?.toLowerCase() ?? null;
+  for (const def of DEFS) {
+    if (def.unitGate !== undefined && def.unitGate !== u) continue;
+    if (def.match(lower)) return def;
+  }
   return null;
 }

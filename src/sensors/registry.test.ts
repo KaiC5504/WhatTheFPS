@@ -119,4 +119,19 @@ describe('findSensor', () => {
     expect(findSensor('CPU VDDCR_VDD VRM (SVI3 TFN)')!.domain).toBe('cpu');
     expect(findSensor('GPU Temperature')!.multi).toBeUndefined();
   });
+  it('maps laptop-EC bare CPU/GPU fan tachs by their RPM unit', () => {
+    // ASUS NB EC labels fan columns 'CPU [RPM]' / 'GPU [RPM]' — only the unit marks them as fans
+    expect(findSensor('CPU', 'RPM')?.key).toBe('fan.cpuRpm');
+    expect(findSensor('GPU', 'RPM')?.key).toBe('fan.gpuRpm');
+    expect(findSensor('gpu', 'rpm')?.key).toBe('fan.gpuRpm');
+    expect(findSensor('CPU', '°C')).toBeNull();
+    expect(findSensor('GPU', '%')).toBeNull();
+    expect(findSensor('CPU', null)).toBeNull();
+    expect(findSensor('GPU')).toBeNull();
+  });
+  it('marks fan keys for the per-row-max merge (dual GPU fans)', () => {
+    expect(findSensor('CPU Fan')!.multi).toBe('max');
+    expect(findSensor('GPU Fan')!.multi).toBe('max');
+    expect(findSensor('GPU', 'RPM')!.multi).toBe('max');
+  });
 });
