@@ -87,4 +87,35 @@ describe('findSensor', () => {
     expect(key('Throttle Reason - Current')).toBe('flag.gpu.perfLimitCurrent');
     expect(key('Thermal Throttling (PROCHOT EXT)')).toBe('flag.cpu.prochot');
   });
+  it('maps drive sensors including the numbered instances HWiNFO emits per extra thermal sensor', () => {
+    expect(key('Drive Temperature')).toBe('drive.tempC');
+    expect(key('Drive Temperature 2')).toBe('drive.tempC');   // AMD + Intel drive #1
+    expect(key('Drive Temperature 3')).toBe('drive.tempC');   // Intel drive #2
+    expect(key('Total Activity')).toBe('drive.activityPct');
+    expect(key('Read Rate')).toBe('drive.readRateMbps');
+    expect(key('Write Rate')).toBe('drive.writeRateMbps');
+    // per-direction activity and wear columns stay unmapped (out of scope)
+    expect(key('Read Activity')).toBeNull();
+    expect(key('Drive Remaining Life')).toBeNull();
+    expect(key('Drive Temperature X')).toBeNull();            // numbered means digits only
+  });
+  it('maps every AMD SVI3 VRM rail temp onto one worst-rail key', () => {
+    expect(key('CPU VDDCR_VDD VRM (SVI3 TFN)')).toBe('vrm.tempC');
+    expect(key('CPU VDDCR_SOC VRM (SVI3 TFN)')).toBe('vrm.tempC');
+    expect(key('CPU VDD_MISC VRM (SVI3 TFN)')).toBe('vrm.tempC');
+    // the Voltage near-miss must keep resolving to the existing voltage key
+    expect(key('CPU VDDCR_VDD Voltage (SVI3 TFN)')).toBe('cpu.coreVoltage');
+  });
+  it('maps the Intel core VR thermal alert; GT/RING variants stay unmapped', () => {
+    expect(key('IA: VR Thermal Alert')).toBe('flag.cpu.vrThermalAlert');
+    expect(key('GT: VR Thermal Alert')).toBeNull();
+    expect(key('RING: VR Thermal Alert')).toBeNull();
+  });
+  it('marks drive/VRM keys for the per-row-max merge', () => {
+    const def = findSensor('Drive Temperature 2');
+    expect(def!.multi).toBe('max');
+    expect(def!.domain).toBe('drive');
+    expect(findSensor('CPU VDDCR_VDD VRM (SVI3 TFN)')!.multi).toBe('max');
+    expect(findSensor('GPU Temperature')!.multi).toBeUndefined();
+  });
 });

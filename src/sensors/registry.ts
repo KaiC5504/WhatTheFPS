@@ -2,10 +2,11 @@ import type { CanonicalKey, FlagKey } from '../types';
 
 export interface SensorDef {
   key: CanonicalKey | FlagKey;
-  domain: 'cpu' | 'gpu' | 'igpu' | 'ram' | 'flag';
+  domain: 'cpu' | 'gpu' | 'igpu' | 'ram' | 'drive' | 'flag';
   kind: 'numeric' | 'flag';
   label: string;
   unit: string | null;
+  multi?: 'max';                    // merge ALL matching columns into one per-row-max series
   match: (name: string) => boolean; // receives a lower-cased name
 }
 
@@ -13,6 +14,13 @@ export interface SensorDef {
 const eq = (...names: string[]) => {
   const set = new Set(names.map((n) => n.toLowerCase()));
   return (name: string) => set.has(name);
+};
+
+// HWiNFO numbers repeated sensor names within a section ('Drive Temperature 2', …3).
+const numbered = (base: string) => {
+  const b = base.toLowerCase();
+  return (name: string) =>
+    name === b || (name.startsWith(b + ' ') && /^\d+$/.test(name.slice(b.length + 1)));
 };
 
 // First matching def wins, so order specific names before generic ones
@@ -120,6 +128,20 @@ const DEFS: SensorDef[] = [
   { key: 'pagefile.usagePct', domain: 'ram', kind: 'numeric', label: 'Page File Usage', unit: '%',
     match: eq('Page File Usage') },
 
+  // storage — names repeat once per drive section; multi:'max' folds them to the worst drive
+  { key: 'drive.tempC', domain: 'drive', kind: 'numeric', label: 'Drive Temperature (worst)', unit: '°C',
+    multi: 'max', match: numbered('Drive Temperature') },
+  { key: 'drive.activityPct', domain: 'drive', kind: 'numeric', label: 'Drive Activity (max)', unit: '%',
+    multi: 'max', match: eq('Total Activity') },
+  { key: 'drive.readRateMbps', domain: 'drive', kind: 'numeric', label: 'Drive Read Rate (max)', unit: 'MB/s',
+    multi: 'max', match: eq('Read Rate') },
+  { key: 'drive.writeRateMbps', domain: 'drive', kind: 'numeric', label: 'Drive Write Rate (max)', unit: 'MB/s',
+    multi: 'max', match: eq('Write Rate') },
+
+  // CPU VRM temperature — AMD SVI3 exposes one sensor per rail; the worst rail wins
+  { key: 'vrm.tempC', domain: 'cpu', kind: 'numeric', label: 'CPU VRM (worst rail)', unit: '°C',
+    multi: 'max', match: eq('CPU VDDCR_VDD VRM (SVI3 TFN)', 'CPU VDDCR_SOC VRM (SVI3 TFN)', 'CPU VDD_MISC VRM (SVI3 TFN)') },
+
   // CPU flags
   { key: 'flag.cpu.thermalThrottle', domain: 'flag', kind: 'flag', label: 'CPU Thermal Throttling', unit: 'Yes/No',
     match: eq('Core Thermal Throttling (avg)', 'Package/Ring Thermal Throttling', 'Thermal Throttling (HTC)') },
@@ -129,6 +151,8 @@ const DEFS: SensorDef[] = [
     match: eq('IA: Running Average Thermal Limit') },
   { key: 'flag.cpu.powerLimit', domain: 'flag', kind: 'flag', label: 'CPU Power Limit Exceeded', unit: 'Yes/No',
     match: eq('Core Power Limit Exceeded (avg)', 'Package/Ring Power Limit Exceeded') },
+  { key: 'flag.cpu.vrThermalAlert', domain: 'flag', kind: 'flag', label: 'CPU VR Thermal Alert', unit: 'Yes/No',
+    match: eq('IA: VR Thermal Alert') },
 
   // GPU performance-limiter flags (AMD's 'Throttle Reason - *' map onto the same semantic keys)
   { key: 'flag.gpu.perfLimitPower', domain: 'flag', kind: 'flag', label: 'GPU Perf Limit Power', unit: 'Yes/No',
