@@ -151,7 +151,7 @@ function Results({
       )}
 
       <div className="results__cols">
-        <DigestPanel result={result} specs={specs} />
+        <DigestPanel source={{ kind: 'live', result, specs }} />
         <SpecsCard specs={specs} onChange={onSpecsChange} />
       </div>
 

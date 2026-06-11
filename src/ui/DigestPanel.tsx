@@ -1,35 +1,39 @@
 import { useState, useMemo } from 'react';
-import type { AnalysisResult, DigestMode, InferredSpecs } from '../types';
+import type { AnalysisResult, Comparison, Digest, DigestMode, InferredSpecs, SavedRun } from '../types';
 import { buildDigest } from '../digest/digest';
+import { buildCompareDigest } from '../digest/compareDigest';
 import { Card, Button } from './primitives';
 import './DigestPanel.css';
 
 const DEFAULT_GOAL = 'help me lower temps without losing FPS';
+const COMPARE_GOAL = 'did this change help, and what else can I tune?';
 
-export function DigestPanel({
-  result,
-  specs,
-}: {
-  result: AnalysisResult;
-  specs: InferredSpecs;
-}): JSX.Element {
+export type DigestSource =
+  | { kind: 'live'; result: AnalysisResult; specs: InferredSpecs }
+  | { kind: 'saved'; run: SavedRun }
+  | { kind: 'compare'; before: SavedRun; after: SavedRun; comparison: Comparison };
+
+export function DigestPanel({ source }: { source: DigestSource }): JSX.Element {
   const [mode, setMode] = useState<DigestMode>('compact');
-  const [goal, setGoal] = useState(DEFAULT_GOAL);
+  const [goal, setGoal] = useState(source.kind === 'compare' ? COMPARE_GOAL : DEFAULT_GOAL);
 
-  // Recompute whenever the result, goal, or specs change. We inject the caller's
-  // (possibly user-edited) specs into the log so they flow into the prompt.
-  const digest = useMemo(
-    () =>
-      buildDigest({
-        log: { ...result.log, specs },
-        stats: result.stats,
-        events: result.events,
-        windows: result.windows,
-        guidance: result.verdict.guidance,
-        goal,
-      }),
-    [result.log, result.stats, result.events, result.windows, result.verdict.guidance, specs, goal],
-  );
+  const digest = useMemo<Digest>(() => {
+    switch (source.kind) {
+      case 'live':
+        return buildDigest({
+          log: { ...source.result.log, specs: source.specs },
+          stats: source.result.stats,
+          events: source.result.events,
+          windows: source.result.windows,
+          guidance: source.result.verdict.guidance,
+          goal,
+        });
+      case 'saved':
+        return source.run.result.digest;
+      case 'compare':
+        return buildCompareDigest(source.before, source.after, source.comparison, { goal });
+    }
+  }, [source, goal]);
 
   function handleCopy() {
     navigator.clipboard.writeText(digest[mode]);
@@ -55,16 +59,24 @@ export function DigestPanel({
         </div>
       </div>
 
-      <label className="digest-panel__goal-label u-label" htmlFor="digest-goal">
-        Your goal
-      </label>
-      <textarea
-        id="digest-goal"
-        className="digest-panel__goal"
-        value={goal}
-        onChange={(e) => setGoal(e.target.value)}
-        rows={2}
-      />
+      {source.kind === 'saved' ? (
+        <p className="u-dim">
+          Saved runs keep the prompt they were analyzed with — the goal can't be edited here.
+        </p>
+      ) : (
+        <>
+          <label className="digest-panel__goal-label u-label" htmlFor="digest-goal">
+            Your goal
+          </label>
+          <textarea
+            id="digest-goal"
+            className="digest-panel__goal"
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+            rows={2}
+          />
+        </>
+      )}
 
       <Card tone="inset" className="digest-panel__well">
         <pre className="mono digest-panel__pre">{digest[mode]}</pre>
