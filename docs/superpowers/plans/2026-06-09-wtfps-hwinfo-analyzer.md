@@ -615,7 +615,8 @@ CPU-busy, per-core detail, confidence levels.)*
 
 ## v2 Roadmap (next plans, post-v1.5)
 
-Each becomes its own brainstorm → spec → plan cycle. **Re-shaped 2026-06-10** (session history
+**All six items are plan-ready as of 2026-06-11** (detailed zero-context implementation plans,
+strict order: plan N assumes plans 1..N−1 merged). **Re-shaped 2026-06-10** (session history
 folded into #1; share link / Tauri / live-tail demoted to stretch). Priority order:
 
 1. **Before/after comparison + lightweight session history** — auto-saved runs in localStorage
@@ -623,13 +624,22 @@ folded into #1; share link / Tauri / live-tail demoted to stretch). Priority ord
    ("avg GPU temp −6°C, avg FPS +2, throttle 12→0"); tiered diff (Easy side-by-side hero deltas /
    Nerd full delta table); stacked BEFORE/AFTER compare digest; warn-but-allow mismatch guardrails.
    → Design spec: [`specs/2026-06-10-wtfps-before-after-compare-design.md`](../specs/2026-06-10-wtfps-before-after-compare-design.md).
+   → Implementation plan: [`2026-06-11-wtfps-v2-compare-history.md`](2026-06-11-wtfps-v2-compare-history.md).
    *(Originally items #1 + #6; merged because both rest on one localStorage "saved run" foundation.)*
    *(2026-06-10 note: the compare diff should also surface v1.5's time-split and evidence tiers.)*
+   *(2026-06-11 note: the spec's "~15 KB per AnalysisResult" assumption no longer holds post-v1.5 —
+   real results serialize to MBs, so runs are slimmed before save (`SlimResult`); this and other
+   deviations are documented in the plan's "Deviations from spec" section.)*
 2. **Interactive timelines & windowing** — uPlot timelines with event markers; brush-to-select a window and recompute stats. (Auto-segmentation shipped in v1.5; this item is the interactive layer on top.)
+   → Implementation plan: [`2026-06-11-wtfps-v2-interactive-timelines.md`](2026-06-11-wtfps-v2-interactive-timelines.md).
 3. **Deeper diagnostics** — frame-pacing/micro-stutter beyond v1.5 (animation error); VRM/mem-junction/drive temps; fan-vs-temp; storage/asset-streaming stutter correlation.
+   → Implementation plan: [`2026-06-11-wtfps-v2-deeper-diagnostics.md`](2026-06-11-wtfps-v2-deeper-diagnostics.md).
 4. **Specs & normalization breadth** — optional HWiNFO report-file parsing; broaden the registry (desktop Ryzen/Intel, Radeon dGPU, Arc); small reference DB of expected temp ranges.
-5. **Digest & profiles** — goal presets; multiple LLM output profiles; local HTML/PNG report card.
-6. **Packaging & a11y** — PWA/offline; full a11y pass.
+   → Implementation plan: [`2026-06-11-wtfps-v2-specs-breadth.md`](2026-06-11-wtfps-v2-specs-breadth.md). *(Needs a real HWiNFO report file as a fixture before its parseReport task.)*
+5. **Digest & profiles** — goal presets; multiple LLM output profiles; local HTML report card (PNG export rejected — heavy dependency for what an OS screenshot covers).
+   → Implementation plan: [`2026-06-11-wtfps-v2-digest-profiles.md`](2026-06-11-wtfps-v2-digest-profiles.md).
+6. **Packaging & a11y** — PWA/offline (vite-plugin-pwa, prompt-for-update); full a11y pass.
+   → Implementation plan: [`2026-06-11-wtfps-v2-packaging-a11y.md`](2026-06-11-wtfps-v2-packaging-a11y.md).
 
 **Stretch / maybe-later:** Tauri Windows app · live mode tailing a running HWiNFO CSV ·
 privacy-preserving share link (compact digest encoded in URL). Richer history management (search,
