@@ -15,6 +15,13 @@ vi.mock('./ui/useAnalysis', async () => {
   };
 });
 
+// Nerd mode mounts the interactive timeline; jsdom has no canvas, so swap uPlot
+// for the shared fake (Design decision 9: any test rendering the chart mocks uplot).
+vi.mock('uplot', async () => {
+  const mock = await import('./ui/timeline/_uplotMock');
+  return { default: mock.FakeUPlot };
+});
+
 import { App } from './App';
 
 describe('App assembly', () => {

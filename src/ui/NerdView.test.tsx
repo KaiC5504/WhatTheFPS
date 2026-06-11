@@ -1,8 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { NerdView } from './NerdView';
 import { analyze } from '../engine/analyze';
 import { fixtureResult } from './_fixtures';
+import { instances, resetUplotMock } from './timeline/_uplotMock';
+
+vi.mock('uplot', async () => {
+  const mock = await import('./timeline/_uplotMock');
+  return { default: mock.FakeUPlot };
+});
 
 // A small but representative log: cpu/gpu temps + clocks + usage, both FPS columns,
 // and two flag columns (one throttle, one perf-limit) with some "Yes" samples.
@@ -16,6 +22,14 @@ const csv = [
 function build() {
   return analyze(new TextEncoder().encode(csv));
 }
+
+function timedFixture() {
+  const result = fixtureResult();
+  result.log.timesMs = [0, 2000, 4000, 6000, 8000];
+  return result;
+}
+
+beforeEach(() => resetUplotMock());
 
 describe('NerdView', () => {
   it('renders the per-sensor stats table with sensor labels', () => {
@@ -51,13 +65,33 @@ describe('NerdView', () => {
     expect(screen.getByText('2 of 3')).toBeInTheDocument();
   });
 
-  it('nerd view shows timeline band, worst moments, core grid and badges', () => {
-    const result = fixtureResult();
+  it('nerd view shows timeline, worst moments, core grid and badges', () => {
+    const result = timedFixture();
     result.log.cores = { usage: [{ label: 'Core 0 T0', coreType: 'std', coreIndex: 0, thread: 0, values: [50, 60] }], effectiveClock: [] };
     render(<NerdView result={result} />);
     expect(screen.getByText('Session timeline')).toBeInTheDocument();
     expect(screen.getByText('Worst moments')).toBeInTheDocument();
     expect(screen.getByText('Per-thread CPU usage')).toBeInTheDocument();
     expect(screen.getByText('Per-sensor statistics')).toBeInTheDocument();
+  });
+
+  it('brushing the timeline shows the selection panel; clearing hides it', () => {
+    render(<NerdView result={timedFixture()} />);
+    expect(screen.queryByText('Selection')).not.toBeInTheDocument();
+
+    // 600 px chart over 0–8 s: px 150–450 = 2 s–6 s → rows 1–3
+    act(() => instances[0].fireSelect(150, 300));
+    expect(screen.getByText('Selection')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /clear selection/i }));
+    expect(screen.queryByText('Selection')).not.toBeInTheDocument();
+  });
+
+  it('the From/To inputs reach the same selection panel (keyboard path)', () => {
+    render(<NerdView result={timedFixture()} />);
+    fireEvent.change(screen.getByLabelText(/^from/i), { target: { value: '0:02' } });
+    fireEvent.change(screen.getByLabelText(/^to/i), { target: { value: '0:06' } });
+    fireEvent.click(screen.getByRole('button', { name: /select range/i }));
+    expect(screen.getByText('Selection')).toBeInTheDocument();
   });
 });

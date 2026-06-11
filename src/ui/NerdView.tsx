@@ -1,6 +1,9 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AnalysisResult, CanonicalKey, Stats } from '../types';
+import { computeSelection } from '../engine/selection';
 import { Card } from './primitives';
-import { WindowTimeline } from './WindowTimeline';
+import { Timeline } from './timeline/Timeline';
+import { SelectionPanel } from './timeline/SelectionPanel';
 import { WorstMoments } from './WorstMoments';
 import { CoreGrid } from './CoreGrid';
 import './NerdView.css';
@@ -121,9 +124,23 @@ function FlagTable({ result }: { result: AnalysisResult }) {
 }
 
 export function NerdView({ result }: { result: AnalysisResult }): JSX.Element {
+  const [range, setRange] = useState<{ startRow: number; endRow: number } | null>(null);
+
+  // a brushed range from one log is meaningless on the next
+  useEffect(() => setRange(null), [result]);
+
+  const onSelect = useCallback((startRow: number, endRow: number) => setRange({ startRow, endRow }), []);
+  const onClear = useCallback(() => setRange(null), []);
+
+  const selection = useMemo(
+    () => (range ? computeSelection(result.log, result.windows, range.startRow, range.endRow) : null),
+    [result, range],
+  );
+
   return (
     <div className="nerd-view stack">
-      <WindowTimeline result={result} />
+      <Timeline result={result} selection={range} onSelect={onSelect} onClear={onClear} />
+      {selection && <SelectionPanel result={result} selection={selection} onClear={onClear} />}
       <WorstMoments worst={result.windows.worst} baseMs={result.windows.windows[0]?.window.startMs ?? 0} />
       <CoreGrid cores={result.log.cores} />
       <SensorTable result={result} />
