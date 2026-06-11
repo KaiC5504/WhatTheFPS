@@ -1,0 +1,22 @@
+HWiNFO® 64 Version 8.48-5990
+  Computer Brand Name:                    ASUS ROG Strix G614JI_G614JI
+Central Processor(s) ------------------------------------------------------
+Intel Core i7-13650HX -----------------------------------------------------
+  Processor Name:                         Intel Core i7-13650HX
+  CPU Brand Name:                         13th Gen Intel(R) Core(TM) i7-13650HX
+  Computer Brand Name:                    ASUS ROG Strix G614JI_G614JI
+Memory --------------------------------------------------------------------
+  Total Memory Size:                      32 GBytes
+  Module Manufacturer:                    Kingston
+  Module Part Number:                     KF556S40-16
+  Module Manufacturer:                    Kingston
+  Module Part Number:                     KF556S40-16
+Video Adapter -------------------------------------------------------------
+Intel UHD Graphics --------------------------------------------------------
+  Video Chipset:                          Intel UHD Graphics
+  Video Card:                             Intel Raptor Lake-S/HX - Integrated Graphics [B0] [ASUS]
+  GPU Type:                               Integrated
+NVIDIA GeForce RTX 4070 Laptop --------------------------------------------
+  Video Chipset:                          NVIDIA GeForce RTX 4070 Laptop
+  Video Card:                             NVIDIA RTX 4070 Laptop [ASUS]
+  GPU Type:                               Discrete
