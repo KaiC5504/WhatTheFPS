@@ -43,6 +43,8 @@ const FULL_EXTRA_SENSORS: SensorLine[] = [
   { key: 'gpu.memUsagePct', label: 'GPU mem usage', unit: '%', kind: 'usage' },
   { key: 'ram.loadPct', label: 'RAM load', unit: '%', kind: 'usage' },
   { key: 'cpu.usageCoreMax', label: 'CPU core usage (max)', unit: '%', kind: 'usage' },
+  { key: 'drive.tempC', label: 'Drive temp (worst)', unit: '°C', kind: 'level' },
+  { key: 'vrm.tempC', label: 'CPU VRM temp (worst rail)', unit: '°C', kind: 'level' },
 ];
 
 function sensorLine(def: SensorLine, stats: Partial<Record<CanonicalKey, Stats>>): string | null {

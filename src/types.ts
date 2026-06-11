@@ -38,11 +38,16 @@ export type CanonicalKey =
   | 'rtss.frameTimeMs'
   // core voltages (undervolt headroom) and fan speeds (cooling headroom)
   | 'gpu.coreVoltage' | 'cpu.coreVoltage' | 'fan.cpuRpm' | 'fan.gpuRpm'
+  // storage — multi-instance columns, merged to the per-row worst drive at normalize time
+  | 'drive.tempC' | 'drive.activityPct' | 'drive.readRateMbps' | 'drive.writeRateMbps'
+  // CPU voltage-regulator temperature (worst rail; AMD SVI3 telemetry)
+  | 'vrm.tempC'
   // fps (filled via FpsData, not a plain series)
   ;
 
 export type FlagKey =
   | 'flag.cpu.thermalThrottle' | 'flag.cpu.prochot' | 'flag.cpu.ratl' | 'flag.cpu.powerLimit'
+  | 'flag.cpu.vrThermalAlert'
   | 'flag.gpu.perfLimitPower' | 'flag.gpu.perfLimitThermal' | 'flag.gpu.perfLimitUtil'
   | 'flag.gpu.perfLimitVRel' | 'flag.gpu.perfLimitVOp' | 'flag.gpu.perfLimitCurrent';
 

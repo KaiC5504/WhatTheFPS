@@ -6,6 +6,7 @@ export const FLAG_LABELS: Record<FlagKey, string> = {
   'flag.cpu.prochot': 'CPU PROCHOT',
   'flag.cpu.ratl': 'CPU RATL',
   'flag.cpu.powerLimit': 'CPU power limit',
+  'flag.cpu.vrThermalAlert': 'CPU VR thermal alert',
   'flag.gpu.perfLimitPower': 'GPU power limit',
   'flag.gpu.perfLimitThermal': 'GPU thermal limit',
   'flag.gpu.perfLimitUtil': 'GPU underutilized (waiting on CPU)',

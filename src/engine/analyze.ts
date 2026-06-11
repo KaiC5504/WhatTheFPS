@@ -13,6 +13,9 @@ import { causeGpuBound } from '../causes/gpuBound';
 import { causeVramPressure } from '../causes/vramPressure';
 import { causeRamPressure } from '../causes/ramPressure';
 import { causeHotspotDelta } from '../causes/hotspotDelta';
+import { causeFramePacing } from '../causes/framePacing';
+import { causeFanCurve } from '../causes/fanCurve';
+import { causeStorageStutter } from '../causes/storageStutter';
 import { buildVerdict } from '../verdict/buildVerdict';
 import { buildDigest } from '../digest/digest';
 
@@ -46,6 +49,9 @@ export function analyze(bytes: Uint8Array, opts: AnalyzeOptions = {}): AnalysisR
     ...causeVramPressure(log, stats, windows),
     ...causeRamPressure(log, stats, windows),
     ...causeHotspotDelta(log, stats, windows),
+    ...causeFramePacing(log, stats, windows),
+    ...causeFanCurve(log, stats, windows),
+    ...causeStorageStutter(log, stats, windows),
   ];
 
   const verdict = buildVerdict(log, stats, events, windows);

@@ -178,3 +178,47 @@ describe('sanitizers', () => {
     expect(log.sensors['rtss.frameTimeMs']?.values).toEqual([null, 8.3, null]);
   });
 });
+
+describe('multi-instance merge', () => {
+  it('folds every Drive Temperature column into one per-row-max series', () => {
+    // Intel layout: two drive sections, four temp columns, instance numbers 2 and 3.
+    const text =
+      'Date,Time,"Drive Temperature [°C]","Drive Temperature 2 [°C]","Drive Temperature [°C]","Drive Temperature 3 [°C]"\n' +
+      '9.6.2026,12:00:00.000,41,55,38,40\n' +
+      '9.6.2026,12:00:02.000,42,,39,60\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.sensors['drive.tempC']!.values).toEqual([55, 60]);
+    expect(log.unknownColumns).toHaveLength(0);
+  });
+
+  it('merges null-safely: null only when every instance is null on that row', () => {
+    const text =
+      'Date,Time,"Total Activity [%]","Total Activity [%]"\n' +
+      '9.6.2026,12:00:00.000,,\n' +
+      '9.6.2026,12:00:02.000,12,3\n' +
+      '9.6.2026,12:00:04.000,,7\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.sensors['drive.activityPct']!.values).toEqual([null, 12, 7]);
+  });
+
+  it('merges the three VRM rails to the worst rail', () => {
+    const text =
+      'Date,Time,"CPU VDDCR_VDD VRM (SVI3 TFN) [°C]","CPU VDDCR_SOC VRM (SVI3 TFN) [°C]","CPU VDD_MISC VRM (SVI3 TFN) [°C]"\n' +
+      '9.6.2026,12:00:00.000,71,65,58\n' +
+      '9.6.2026,12:00:02.000,70,74,59\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.sensors['vrm.tempC']!.values).toEqual([71, 74]);
+  });
+
+  it('non-multi keys keep first-claim-wins', () => {
+    const text =
+      'Date,Time,"Total CPU Usage [%]","Total CPU Usage [%]"\n' +
+      '9.6.2026,12:00:00.000,10,99\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.sensors['cpu.usageTotal']!.values).toEqual([10]);
+  });
+});

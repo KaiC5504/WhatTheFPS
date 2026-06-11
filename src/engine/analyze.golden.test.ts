@@ -143,4 +143,59 @@ describe('analyze (golden, real logs)', () => {
       for (const wm of r.windows.worst) expect(Number.isFinite(wm.fpsDropPct), rel).toBe(true);
     }
   });
+
+  it('v2: drive/VRM columns are claimed and merged on real logs', () => {
+    const amd = analyze(sample('AMD + Nvidia/A16_superposition_1080extreme_2460MHz.CSV'));
+    expect(amd.stats['drive.tempC']?.count).toBeGreaterThan(0);
+    expect(amd.stats['drive.activityPct']?.count).toBeGreaterThan(0);
+    expect(amd.stats['vrm.tempC']?.count).toBeGreaterThan(0);
+    expect(amd.log.unknownColumns.filter((c) => c.startsWith('Drive Temperature'))).toEqual([]);
+
+    const intel = analyze(sample('Intel + Nvidia/KaiC_ItTakesTwo.CSV'));
+    // four drive-temp columns across two drives merged into one worst-drive series
+    expect(intel.log.sensors['drive.tempC']!.values.length).toBe(intel.log.rowCount);
+    expect(intel.stats['drive.tempC']?.count).toBeGreaterThan(0);
+    expect(intel.log.flags['flag.cpu.vrThermalAlert']).toBeDefined();
+  });
+
+  // THRESHOLD GUARDRAIL — a stutter / fan-curve / storage-stutter call on a clean
+  // fixed-scene benchmark is a false positive by definition. If this fails, TUNE the
+  // analyzer gates (SPIKE_FACTOR / WARN_INDEX / WARN_CLUSTERS / ACTIVITY_BURST_FACTOR /
+  // TEMP_RISE_C) and document the change in the commit message. Do NOT delete this test.
+  it('v2: no new detector fires on the benchmark samples', () => {
+    const NEW_TYPES = ['stutter', 'fan-curve', 'storage-stutter'];
+    const BENCHMARKS = [
+      'AMD + Nvidia/A16_cinebench_MultiCore_-20UVz_1669pts.CSV',
+      'AMD + Nvidia/A16_cinebench_MultiCore_-25UV_1695pts.CSV',
+      'AMD + Nvidia/A16_cinebench_SingleCore_-20UV_114pts.CSV',
+      'AMD + Nvidia/A16_superposition_1080extreme_0.9_2520MHz.CSV',
+      'AMD + Nvidia/A16_superposition_1080extreme_2460MHz.CSV',
+      'Intel + Nvidia/StrixG16_cinebench_CPU_MultiThreads_3524pts.CSV',
+      'Intel + Nvidia/StrixG16_cinebench_CPU_SingleCore_577pts.CSV',
+      'Intel + Nvidia/StrixG16_cinebench_CPU_SingleThread_445pts_MP7.92x.CSV',
+      'Intel + Nvidia/StrixG16_cinebench_GPU_46643pts.CSV',
+      'Intel + Nvidia/StrixG16_superposition_GPU_1080extreme_5633score.CSV',
+      'Intel + Nvidia/StrixG16_superposition_GPU_1080extreme_800mem_5693score.CSV',
+    ];
+    for (const rel of BENCHMARKS) {
+      const r = analyze(sample(rel));
+      const fired = r.events.filter((e) => NEW_TYPES.includes(e.type));
+      expect(fired.map((e) => `${rel}: ${e.type} — ${e.sentence}`)).toEqual([]);
+    }
+  });
+
+  it('v2: gameplay logs keep the honesty invariants on any new-detector event', () => {
+    const NEW_TYPES = ['stutter', 'fan-curve', 'storage-stutter'];
+    for (const rel of ['Intel + Nvidia/KaiC_ItTakesTwo.CSV', 'Intel + Nvidia/KaiC_NTE_undervolt-65_.CSV']) {
+      const r = analyze(sample(rel));
+      // No new-type events fire on these logs today; this guards the honesty contract
+      // (windows on non-info events, "Sampled" wording, evidence present) for when they do.
+      for (const e of r.events.filter((x) => NEW_TYPES.includes(x.type))) {
+        // plan #2 timeline contract: non-info events must carry their windows
+        if (e.severity !== 'info') expect(e.windowIndexes?.length, `${rel}: ${e.type}`).toBeGreaterThan(0);
+        if (e.type === 'stutter') expect(e.sentence, rel).toContain('Sampled');
+        expect(e.evidence, `${rel}: ${e.type}`).toBeDefined();
+      }
+    }
+  });
 });

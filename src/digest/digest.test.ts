@@ -126,6 +126,15 @@ describe('buildDigest', () => {
     expect(d.compact).toContain('no framerate logged');
     expect(d.fpsSourceLabel).toBe('');
   });
+
+  it('full digest includes worst-drive and VRM temp rows when present, compact does not', () => {
+    const base = sampleResult();
+    const extra = { 'drive.tempC': [45, 52, 70, 68, 66], 'vrm.tempC': [60, 64, 70, 72, 71] };
+    const d = buildDigest({ ...base, stats: { ...base.stats, ...statsFor(extra) } });
+    expect(d.full).toMatch(/Drive temp \(worst\): avg .*max 70/);
+    expect(d.full).toMatch(/CPU VRM temp \(worst rail\)/);
+    expect(d.compact).not.toMatch(/Drive temp/);
+  });
 });
 
 describe('evidence blocks', () => {

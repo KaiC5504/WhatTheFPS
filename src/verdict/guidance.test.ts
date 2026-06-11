@@ -24,11 +24,20 @@ describe('buildGuidance', () => {
       sensors: {
         'pm.gpuBusyMs': [1], 'pm.frameTimeMs': [1],
         'fan.cpuRpm': [3000], 'gpu.coreVoltage': [0.9],
+        'drive.activityPct': [2],
       },
       fps: { source: 'displayed', series: [100] },
       pollMs: 500,
     });
     log.cores = { usage: [{ label: 'Core 0 T0', coreType: 'std', coreIndex: 0, thread: 0, values: [1] }], effectiveClock: [] };
     expect(buildGuidance(log)).toHaveLength(0);
+  });
+
+  it('asks for drive activity sensors when absent, satisfied by either drive family', () => {
+    expect(buildGuidance(makeLog({})).map((x) => x.what).join(' ')).toMatch(/drive activity/i);
+    const log = makeLog({ sensors: { 'drive.activityPct': [5] } });
+    expect(buildGuidance(log).map((x) => x.what).join(' ')).not.toMatch(/drive activity/i);
+    const log2 = makeLog({ sensors: { 'drive.readRateMbps': [100] } });
+    expect(buildGuidance(log2).map((x) => x.what).join(' ')).not.toMatch(/drive activity/i);
   });
 });
