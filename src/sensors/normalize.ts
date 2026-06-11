@@ -170,8 +170,22 @@ export function normalize(columns: ColumnMeta[], rows: string[][], decimal: Deci
       }
     }
 
-    // First column to claim a key wins (e.g. avoid a later duplicate overwriting it).
-    if (claimed.has(key)) continue;
+    // First column to claim a key wins (e.g. avoid a later duplicate overwriting it) —
+    // except multi:'max' keys, where every matching column folds into a per-row max:
+    // a log can carry several drives / VRM rails, and the worst one is the signal.
+    if (claimed.has(key)) {
+      if (def.kind === 'numeric' && def.multi === 'max') {
+        const existing = sensors[key as CanonicalKey]!;
+        const incoming = rows.map((r) => parseNumeric(r[col.index] ?? '', decimal));
+        existing.values = existing.values.map((a, i) => {
+          const b = incoming[i] ?? null;
+          if (a === null) return b;
+          if (b === null) return a;
+          return Math.max(a, b);
+        });
+      }
+      continue;
+    }
     claimed.add(key);
 
     if (def.kind === 'flag') {
