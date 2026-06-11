@@ -1,0 +1,39 @@
+.sel-panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s4);
+}
+.sel-panel__head .nerd-h {
+  margin-bottom: 0;
+}
+
+.sel-panel .nerd-dl {
+  margin-top: var(--s4);
+}
+.sel-panel .nerd-table {
+  margin-top: var(--s4);
+}
+
+.sel-panel__split {
+  list-style: none;
+  margin: var(--s4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s4);
+  font-size: var(--text-xs);
+}
+.sel-panel__split li {
+  display: inline-flex;
+  gap: var(--s2);
+  color: var(--text-dim);
+}
+.sel-panel__split li span:last-child {
+  color: var(--text);
+}
+
+.sel-panel__note {
+  margin-top: var(--s2);
+  font-size: var(--text-xs);
+}
