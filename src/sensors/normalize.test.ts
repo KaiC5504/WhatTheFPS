@@ -221,4 +221,28 @@ describe('multi-instance merge', () => {
     const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
     expect(log.sensors['cpu.usageTotal']!.values).toEqual([10]);
   });
+
+  it('folds laptop-EC bare CPU/GPU [RPM] fan columns into the fan keys', () => {
+    // ASUS NB EC layout: one bare column per fan, two GPU fans
+    const text =
+      'Date,Time,"CPU [RPM]","GPU [RPM]","GPU [RPM]"\n' +
+      '9.6.2026,12:00:00.000,3540,2340,3300\n' +
+      '9.6.2026,12:00:02.000,3600,5100,4980\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.sensors['fan.cpuRpm']!.values).toEqual([3540, 3600]);
+    expect(log.sensors['fan.gpuRpm']!.values).toEqual([3300, 5100]); // harder-working fan wins
+    expect(log.unknownColumns).toHaveLength(0);
+  });
+
+  it('keeps bare CPU/GPU columns without the RPM unit unmapped', () => {
+    const text =
+      'Date,Time,"CPU [°C]","GPU [°C]"\n' +
+      '9.6.2026,12:00:00.000,75,68\n';
+    const csv = parseCsv(text);
+    const log = normalize(buildColumns(csv.headers), csv.rows, csv.decimal);
+    expect(log.sensors['fan.cpuRpm']).toBeUndefined();
+    expect(log.sensors['fan.gpuRpm']).toBeUndefined();
+    expect(log.unknownColumns).toEqual(['CPU [°C]', 'GPU [°C]']);
+  });
 });

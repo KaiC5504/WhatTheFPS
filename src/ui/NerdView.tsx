@@ -12,9 +12,10 @@ function n(x: number): string {
 // Stable display order; only keys actually present (count > 0) get a row.
 const SENSOR_ORDER: CanonicalKey[] = [
   'cpu.tempPackage', 'cpu.tempCoreMax', 'cpu.usageTotal', 'cpu.usageCoreMax',
-  'cpu.clock', 'cpu.clockEff', 'cpu.power', 'vrm.tempC',
+  'cpu.clock', 'cpu.clockEff', 'cpu.power', 'vrm.tempC', 'fan.cpuRpm',
   'gpu.temp', 'gpu.hotspot', 'gpu.memJunction', 'gpu.usage', 'gpu.memUsagePct',
   'gpu.memControllerLoad', 'gpu.clock', 'gpu.clockEff', 'gpu.power', 'gpu.powerLimit',
+  'fan.gpuRpm',
   'vram.allocatedMb', 'vram.availableMb', 'vram.d3dDedicatedMb', 'vram.d3dDynamicMb',
   'pm.frameTimeMs', 'pm.gpuBusyMs', 'pm.gpuWaitMs', 'pm.cpuBusyMs', 'pm.cpuWaitMs',
   'rtss.frameTimeMs',

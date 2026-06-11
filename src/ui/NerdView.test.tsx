@@ -25,6 +25,17 @@ describe('NerdView', () => {
     expect(screen.getByText('CPU Package')).toBeInTheDocument();
   });
 
+  it('renders fan rows for laptop-EC bare-name fan tachs', () => {
+    const fanCsv = [
+      'Date,Time,"CPU [RPM]","GPU [RPM]","GPU [RPM]","CPU Package [°C]",',
+      '9.6.2026,12:00:00.000,3540,2340,3300,70.0,',
+      '9.6.2026,12:00:02.000,3600,5100,4980,72.0,',
+    ].join('\n');
+    render(<NerdView result={analyze(new TextEncoder().encode(fanCsv))} />);
+    expect(screen.getByText('CPU Fan (max)')).toBeInTheDocument();
+    expect(screen.getByText('GPU Fan (max)')).toBeInTheDocument();
+  });
+
   it('shows the presented-vs-displayed framerate split', () => {
     render(<NerdView result={build()} />);
     expect(screen.getByText('Framerate detail')).toBeInTheDocument();

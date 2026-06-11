@@ -158,6 +158,15 @@ describe('analyze (golden, real logs)', () => {
     expect(intel.log.flags['flag.cpu.vrThermalAlert']).toBeDefined();
   });
 
+  it('fan regression: ASUS EC bare CPU/GPU [RPM] columns are claimed', () => {
+    const r = analyze(sample('Intel + Nvidia/KaiC_ItTakesTwo.CSV'));
+    expect(r.stats['fan.cpuRpm']?.count).toBeGreaterThan(0);
+    expect(r.stats['fan.gpuRpm']?.count).toBeGreaterThan(0);
+    // two GPU fan columns merged per-row max; the busier fan peaks ~5100 RPM
+    expect(r.stats['fan.gpuRpm']!.max).toBeGreaterThanOrEqual(4900);
+    expect(r.log.unknownColumns.filter((c) => /^"?(CPU|GPU) \[RPM\]"?$/.test(c))).toEqual([]);
+  });
+
   // THRESHOLD GUARDRAIL — a stutter / fan-curve / storage-stutter call on a clean
   // fixed-scene benchmark is a false positive by definition. If this fails, TUNE the
   // analyzer gates (SPIKE_FACTOR / WARN_INDEX / WARN_CLUSTERS / ACTIVITY_BURST_FACTOR /
