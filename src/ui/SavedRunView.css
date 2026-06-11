@@ -1,0 +1,16 @@
+.saved-run-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+}
+
+.saved-run-bar__name {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.saved-run-notice p {
+  margin: 0;
+  font-size: var(--text-sm);
+}
