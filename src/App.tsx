@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AnalysisResult, Comparison, InferredSpecs, SavedRun } from './types';
 import { TopBar } from './ui/TopBar';
 import { DropZone } from './ui/DropZone';
@@ -38,8 +38,9 @@ export function App() {
   const [view, setView] = useState<View>({ kind: 'live' });
   const [runsOpen, setRunsOpen] = useState(false);
   const { runs, save, rename, remove, clear } = useRuns();
-  // StrictMode mounts effects twice in dev; remember which result object was saved.
-  const savedFor = useRef<AnalysisResult | null>(null);
+  // Runs are saved only on explicit request; track which result the user saved so the
+  // button can't double-save and resets when a new analysis lands.
+  const [savedResult, setSavedResult] = useState<AnalysisResult | null>(null);
 
   // On a fresh result, prefer the engine's detection. Reuse saved overrides only when they
   // belong to the same machine (same CPU + GPU), so one rig's log can't shadow another's.
@@ -61,12 +62,14 @@ export function App() {
       setSpecs(fresh);
       saveSpecs(fresh);
     }
-    if (savedFor.current !== result) {
-      savedFor.current = result;
-      save(result);
-      setView({ kind: 'live' });   // a fresh analysis always lands on the live view
-    }
-  }, [result, save]);
+    setView({ kind: 'live' });   // a fresh analysis always lands on the live view
+  }, [result]);
+
+  function handleSaveRun() {
+    // save() returns null when the localStorage write fails — stay unsaved so the
+    // user can retry.
+    if (result && save(result)) setSavedResult(result);
+  }
 
   function openSettings() {
     setSpecs((cur) => cur ?? loadSpecs() ?? EMPTY_SPECS);
@@ -123,6 +126,8 @@ export function App() {
             onSpecsChange={setSpecs}
             onReset={reset}
             onOpenRuns={() => setRunsOpen(true)}
+            onSave={handleSaveRun}
+            saved={savedResult === result}
           />
         ) : (
           <Landing
@@ -212,6 +217,8 @@ function Results({
   onSpecsChange,
   onReset,
   onOpenRuns,
+  onSave,
+  saved,
 }: {
   result: AnalysisResult;
   specs: InferredSpecs;
@@ -219,6 +226,8 @@ function Results({
   onSpecsChange: (next: InferredSpecs) => void;
   onReset: () => void;
   onOpenRuns: () => void;
+  onSave: () => void;
+  saved: boolean;
 }) {
   const { verdict } = result;
   return (
@@ -255,6 +264,9 @@ function Results({
         </Button>
         <Button variant="subtle" onClick={onOpenRuns}>
           Compare runs
+        </Button>
+        <Button variant="subtle" onClick={onSave} disabled={saved}>
+          {saved ? 'Saved ✓' : 'Save run'}
         </Button>
       </div>
     </div>
