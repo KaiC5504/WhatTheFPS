@@ -39,6 +39,9 @@
 }
 
 .dropzone__glyph {
+  /* shrinks on short viewports; the cap matches the SVG's intrinsic 44px so tall screens are unchanged */
+  width: clamp(36px, 5.4vh, 44px);
+  height: auto;
   color: var(--accent);
   transition:
     color var(--dur-fast) var(--ease),
@@ -47,7 +50,7 @@
 
 .dropzone__prompt {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: clamp(15px, 2.2vh, 18px);
   font-weight: 600;
   color: var(--text-dim);
   margin: 0;

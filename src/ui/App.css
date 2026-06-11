@@ -1,7 +1,8 @@
 .app {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  /* dvh tracks mobile browser chrome; the landing is tuned to fit exactly one of these */
+  min-height: 100dvh;
 }
 
 .app__main {
@@ -11,22 +12,23 @@
      (viewport + 1080) / 2 == 540px + 50vw, capped so ultrawide lines stay readable */
   max-width: min(calc(540px + 50vw), 1600px);
   margin: 0 auto;
-  padding: clamp(var(--s3), 4vh, var(--s6)) var(--s5) clamp(var(--s5), 5vh, var(--s8));
+  padding: clamp(var(--s2), 1.5vh, var(--s3)) var(--s5) clamp(var(--s3), 2.5vh, var(--s5));
   display: flex;
   flex-direction: column;
 }
 
 .app__footer {
   text-align: center;
-  padding: var(--s5);
+  padding: var(--s4);
   font-size: var(--text-xs);
   border-top: 1px solid var(--border);
 }
 
 /* ---- landing --------------------------------------------------------- */
 
-/* fill the available main height and center, so the intro fits without scroll;
-   the vertical rhythm below shrinks on short viewports (see the vh clamps) */
+/* fill the available main height so the intro clears one viewport without scroll;
+   the ::before/::after spacers absorb leftover height (see below), and the vertical
+   rhythm shrinks on short viewports via the vh clamps */
 .landing {
   flex: 1;
   align-self: center;
@@ -36,8 +38,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: clamp(var(--s2), 1.8vh, var(--s4));
+  gap: clamp(var(--s2), 1.5vh, var(--s4));
+}
+
+/* Bias the block slightly above optical center: the bottom spacer outgrows the top,
+   so slack drains downward instead of pooling above the mascot. Both collapse to 0
+   when there's no slack, so a short screen still fits without scrolling. */
+.landing::before,
+.landing::after {
+  content: '';
+  flex-grow: 2;
+}
+.landing::after {
+  flex-grow: 3;
 }
 
 /* staggered power-on entrance for each block */
@@ -66,7 +79,7 @@
 /* slow idle bob so the greeter feels alive; disabled under reduced-motion.
    width tracks viewport height so the greeter shrinks on short screens */
 .landing__mascot svg {
-  width: clamp(76px, 12vh, 104px);
+  width: clamp(68px, 12vh, 104px);
   height: auto;
   animation: bob 4.5s ease-in-out infinite;
 }
@@ -79,7 +92,7 @@
   /* the vh term lets the headline shrink on short screens so the intro stays
      within one viewport on wide-but-short windows */
   font-size: clamp(28px, min(6vw, 6.5vh), 54px);
-  line-height: 1.04;
+  line-height: 1.0;
   letter-spacing: -0.01em;
   font-weight: 700;
 }
@@ -90,12 +103,15 @@
 
 .landing__pitch {
   color: var(--text-dim);
-  font-size: 16px;
+  font-size: clamp(15px, 2vh, 16px);
   max-width: 50ch;
   margin: 0;
 }
+/* shrink the intake panel on short screens so the whole intro clears one viewport */
 .landing .dropzone {
   width: 100%;
+  min-height: clamp(128px, 20vh, 220px);
+  padding-block: clamp(var(--s3), 2.6vh, var(--s6));
 }
 .landing__status {
   font-size: var(--text-sm);
