@@ -1,6 +1,9 @@
-import { Card } from './primitives';
+import { useRef, useState } from 'react';
+import { Card, Button } from './primitives';
 import { NumberField, Checkbox } from './controls';
 import { saveSpecs } from '../storage/specsStore';
+import { parseReport } from '../report/parseReport';
+import { mergeSpecs } from '../report/mergeSpecs';
 import type { InferredSpecs } from '../types';
 import './SpecsCard.css';
 
@@ -14,6 +17,19 @@ export function SpecsCard({ specs, onChange }: SpecsCardProps) {
     const next: InferredSpecs = { ...specs, ...patch };
     onChange(next);
     saveSpecs(next);
+  }
+
+  const reportInputRef = useRef<HTMLInputElement>(null);
+  const [reportError, setReportError] = useState(false);
+
+  async function importReport(file: File) {
+    const parsed = parseReport(new Uint8Array(await file.arrayBuffer()));
+    if (parsed === null) {
+      setReportError(true);
+      return;
+    }
+    setReportError(false);
+    update(mergeSpecs(specs, parsed));
   }
 
   const ramGb = specs.ramMb != null ? Math.round(specs.ramMb / 1024) : '';
@@ -94,6 +110,38 @@ export function SpecsCard({ specs, onChange }: SpecsCardProps) {
             onChange={(e) => update({ isLaptop: e.target.checked })}
           />
         </div>
+      </div>
+      <div
+        role="group"
+        aria-label="HWiNFO report import"
+        className="specs-card__report"
+        onDrop={(e) => {
+          e.preventDefault();
+          const f = e.dataTransfer.files?.[0];
+          if (f) void importReport(f);
+        }}
+        onDragOver={(e) => e.preventDefault()}
+      >
+        <span className="u-dim">Have a HWiNFO report? Drop it here for exact names —</span>
+        <Button variant="ghost" onClick={() => reportInputRef.current?.click()}>
+          Browse…
+        </Button>
+        <input
+          ref={reportInputRef}
+          type="file"
+          accept=".txt,.htm,.html,.TXT,.HTM"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void importReport(f);
+          }}
+          style={{ display: 'none' }}
+          aria-hidden="true"
+        />
+        {reportError && (
+          <p role="alert" className="specs-card__report-error">
+            Couldn't read that file — export it from HWiNFO via Save Report (TXT or HTML).
+          </p>
+        )}
       </div>
     </Card>
   );
