@@ -30,6 +30,17 @@ describe('causeFramePacing', () => {
     expect(e.evidence?.basis.join(' ')).toMatch(/per-poll averages/);
   });
 
+  it('fires on cluster count alone when the stutter index stays below the warn line', () => {
+    const series = flat(24, 8);
+    // 17 > 2× median (16) so each row spikes, but avg 10.25 / p99 17 → index ≈ 1.66 < 1.8
+    series[9] = 17; series[10] = 17;
+    series[17] = 17; series[18] = 17;
+    series[21] = 17; series[22] = 17;
+    const events = causeFramePacing(makeLog({ sensors: { 'pm.frameTimeMs': series } }), {}, wa6());
+    expect(events).toHaveLength(1);
+    expect(events[0].severity).toBe('warn');
+  });
+
   it('escalates to bad on extreme variability', () => {
     const series = flat(24, 8);
     series[9] = 100; series[10] = 100; series[17] = 100; series[18] = 100;
