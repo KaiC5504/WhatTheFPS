@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import type { AnalysisResult, InferredSpecs } from './types';
+import { useEffect, useRef, useState } from 'react';
+import type { AnalysisResult, Comparison, InferredSpecs, SavedRun } from './types';
 import { TopBar } from './ui/TopBar';
 import { DropZone } from './ui/DropZone';
 import { HeroVerdict } from './ui/HeroVerdict';
@@ -12,6 +12,12 @@ import { DigestPanel } from './ui/DigestPanel';
 import { SpecsCard } from './ui/SpecsCard';
 import { NerdView } from './ui/NerdView';
 import { Mascot } from './ui/Mascot';
+import { RunsPanel } from './ui/RunsPanel';
+import { SavedRunView } from './ui/SavedRunView';
+import { CompareView } from './ui/CompareView';
+import { CompareTable } from './ui/CompareTable';
+import { useRuns } from './ui/useRuns';
+import { compareRuns } from './compare/diff';
 import { useAnalysis, type AnalysisStatus } from './ui/useAnalysis';
 import { loadSpecs, saveSpecs, EMPTY_SPECS } from './storage/specsStore';
 import { Button } from './ui/primitives';
@@ -19,11 +25,21 @@ import './ui/App.css';
 
 type UiMode = 'easy' | 'nerd';
 
+type View =
+  | { kind: 'live' }
+  | { kind: 'saved'; run: SavedRun }
+  | { kind: 'compare'; before: SavedRun; after: SavedRun; comparison: Comparison };
+
 export function App() {
   const { status, result, error, analyzeFile, reset } = useAnalysis();
   const [mode, setMode] = useState<UiMode>('easy');
   const [specs, setSpecs] = useState<InferredSpecs | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [view, setView] = useState<View>({ kind: 'live' });
+  const [runsOpen, setRunsOpen] = useState(false);
+  const { runs, save, rename, remove, clear } = useRuns();
+  // StrictMode mounts effects twice in dev; remember which result object was saved.
+  const savedFor = useRef<AnalysisResult | null>(null);
 
   // On a fresh result, prefer the engine's detection. Reuse saved overrides only when they
   // belong to the same machine (same CPU + GPU), so one rig's log can't shadow another's.
@@ -41,27 +57,77 @@ export function App() {
       setSpecs(fresh);
       saveSpecs(fresh);
     }
-  }, [result]);
+    if (savedFor.current !== result) {
+      savedFor.current = result;
+      save(result);
+      setView({ kind: 'live' });   // a fresh analysis always lands on the live view
+    }
+  }, [result, save]);
 
   function openSettings() {
     setSpecs((cur) => cur ?? loadSpecs() ?? EMPTY_SPECS);
     setSettingsOpen(true);
   }
 
+  function openRun(run: SavedRun) {
+    setRunsOpen(false);
+    setView({ kind: 'saved', run });
+  }
+
+  function startCompare(before: SavedRun, after: SavedRun) {
+    setRunsOpen(false);
+    setView({ kind: 'compare', before, after, comparison: compareRuns(before.result, after.result) });
+  }
+
+  function swapCompare() {
+    setView((v) =>
+      v.kind !== 'compare'
+        ? v
+        : { kind: 'compare', before: v.after, after: v.before, comparison: compareRuns(v.after.result, v.before.result) },
+    );
+  }
+
+  function exitToLive() {
+    setView({ kind: 'live' });
+  }
+
   return (
     <div className="app">
       <TopBar mode={mode} onModeChange={setMode} onOpenSettings={openSettings} />
       <main className="app__main">
-        {status === 'ready' && result ? (
+        {view.kind === 'saved' ? (
+          <SavedRunView run={view.run} mode={mode} onBack={exitToLive} />
+        ) : view.kind === 'compare' ? (
+          <div className="results stack">
+            <CompareView
+              before={view.before}
+              after={view.after}
+              comparison={view.comparison}
+              onSwap={swapCompare}
+              onExit={exitToLive}
+            />
+            {mode === 'nerd' && <CompareTable comparison={view.comparison} />}
+            <DigestPanel
+              source={{ kind: 'compare', before: view.before, after: view.after, comparison: view.comparison }}
+            />
+          </div>
+        ) : status === 'ready' && result ? (
           <Results
             result={result}
             specs={specs ?? result.log.specs}
             mode={mode}
             onSpecsChange={setSpecs}
             onReset={reset}
+            onOpenRuns={() => setRunsOpen(true)}
           />
         ) : (
-          <Landing status={status} error={error} onFile={analyzeFile} />
+          <Landing
+            status={status}
+            error={error}
+            onFile={analyzeFile}
+            runCount={runs.length}
+            onOpenRuns={() => setRunsOpen(true)}
+          />
         )}
       </main>
       {settingsOpen && (
@@ -75,6 +141,17 @@ export function App() {
           </div>
         </div>
       )}
+      {runsOpen && (
+        <RunsPanel
+          runs={runs}
+          onClose={() => setRunsOpen(false)}
+          onOpenRun={openRun}
+          onCompare={startCompare}
+          onRename={rename}
+          onDelete={remove}
+          onClearAll={clear}
+        />
+      )}
       <footer className="app__footer u-dim">
         Runs entirely in your browser — your log never leaves your machine.
       </footer>
@@ -86,10 +163,14 @@ function Landing({
   status,
   error,
   onFile,
+  runCount,
+  onOpenRuns,
 }: {
   status: AnalysisStatus;
   error: string | null;
   onFile: (file: File) => void;
+  runCount: number;
+  onOpenRuns: () => void;
 }) {
   return (
     <section className="landing">
@@ -105,6 +186,11 @@ function Landing({
         rate back — plus a copy-paste prompt for your favorite LLM.
       </p>
       <DropZone onFile={onFile} disabled={status === 'parsing'} />
+      {runCount > 0 && (
+        <Button variant="ghost" onClick={onOpenRuns}>
+          Saved runs ({runCount})
+        </Button>
+      )}
       {status === 'parsing' && <p className="landing__status u-dim">Analyzing your log…</p>}
       {status === 'error' && (
         <p role="alert" className="landing__error">
@@ -121,12 +207,14 @@ function Results({
   mode,
   onSpecsChange,
   onReset,
+  onOpenRuns,
 }: {
   result: AnalysisResult;
   specs: InferredSpecs;
   mode: UiMode;
   onSpecsChange: (next: InferredSpecs) => void;
   onReset: () => void;
+  onOpenRuns: () => void;
 }) {
   const { verdict } = result;
   return (
@@ -151,7 +239,7 @@ function Results({
       )}
 
       <div className="results__cols">
-        <DigestPanel result={result} specs={specs} />
+        <DigestPanel source={{ kind: 'live', result, specs }} />
         <SpecsCard specs={specs} onChange={onSpecsChange} />
       </div>
 
@@ -161,8 +249,8 @@ function Results({
         <Button variant="ghost" onClick={onReset}>
           Analyze another log
         </Button>
-        <Button variant="subtle" disabled title="Before/after comparison is coming in v2">
-          Compare runs (soon)
+        <Button variant="subtle" onClick={onOpenRuns}>
+          Compare runs
         </Button>
       </div>
     </div>

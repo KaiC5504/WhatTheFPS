@@ -49,7 +49,7 @@ function flagEvent(
   const tempClause = peak !== null ? ` (peak ${Math.round(peak)}°C)` : '';
   const sentence = `${hardwareLabel} hit ${flagLabel} in ${count} ${count === 1 ? 'sample' : 'samples'}${tempClause}.`;
   return makeEvent({
-    type: 'throttling', severity, sentence, fix: THROTTLE_FIX, sampleCount: count,
+    type: 'throttling', subtype: 'cpu-thermal', severity, sentence, fix: THROTTLE_FIX, sampleCount: count,
     evidence: { tier: 'measured', basis: ['hardware-latched throttle flag'] },
   });
 }
@@ -80,6 +80,7 @@ function gpuThermalEvent(stats: Partial<Record<CanonicalKey, Stats>>, count: num
   const severity: Severity = density >= GPU_THERMAL_WARN_DENSITY ? 'warn' : 'info';
   return makeEvent({
     type: 'throttling',
+    subtype: 'gpu-thermal',
     severity,
     sentence: `GPU clocks were thermally limited ${pct}% of the session${gpuThermalTempClause(stats)}.`,
     fix: 'Improve GPU cooling (fan curve, dust, pads) or undervolt to keep clocks up.',
@@ -146,6 +147,7 @@ function collapseEvent(wa: WindowAnalysis): DiagEvent | null {
 
   return makeEvent({
     type: 'thermal-collapse',
+    subtype: gpuSag ? 'gpu-thermal' : 'cpu-thermal',
     severity: 'warn',
     sentence: `FPS fell ${dropPct}% from the start of the session to the end while ${side} clocks dropped ${clockDropPct}%${tempClause} — classic heat-soak throttling.`,
     fix: THROTTLE_FIX,

@@ -112,6 +112,7 @@ export interface NormalizedLog {
 export type Severity = 'info' | 'warn' | 'bad';
 export interface DiagEvent {
   id: string; type: string; severity: Severity; sentence: string; fix?: string; sampleCount: number;
+  subtype?: string;
   evidence?: Evidence;
   windowIndexes?: number[];
 }
@@ -196,3 +197,80 @@ export type DigestMode = 'compact' | 'full';
 export interface Digest { compact: string; full: string; tokenEstimate: Record<DigestMode, number>; fpsSourceLabel: string; }
 
 export interface AnalysisResult { log: NormalizedLog; stats: Partial<Record<CanonicalKey, Stats>>; events: DiagEvent[]; verdict: Verdict; digest: Digest; windows: WindowAnalysis; }
+
+// ---- saved runs & before/after compare (v2 #1) ----
+
+export interface FlagCount { fired: number; total: number; }
+
+// What a saved run keeps of NormalizedLog: every row-aligned array emptied.
+// Sensor entries survive as metadata (label/unit) with empty values; flags shrink
+// to fired/total counts; timesMs/cores keep their slots but carry nothing.
+export interface SlimLog {
+  rowCount: number;
+  pollMs: number;
+  specs: InferredSpecs;
+  sensors: Partial<Record<CanonicalKey, NumericSensor>>;   // values always []
+  flagCounts: Partial<Record<FlagKey, FlagCount>>;
+  fps: FpsData;                                            // series/clean always []
+  unknownColumns: string[];
+  timesMs: number[];                                       // always []
+  cores: null;                                             // always null
+}
+
+export interface SlimWindows {
+  windows: WindowClassification[];  // always [] — the per-window array is the big payload
+  timeSplit: TimeSplit;
+  worst: WorstMoment[];
+  windowMs: number;
+  lowConfidence: boolean;
+  activityKind: 'gameplay' | 'workload';
+  logStartMs: number;               // first window's startMs — worst-moment offsets count from it
+}
+
+export interface SlimResult {
+  slim: true;                       // discriminant vs AnalysisResult
+  log: SlimLog;
+  stats: Partial<Record<CanonicalKey, Stats>>;
+  events: DiagEvent[];
+  verdict: Verdict;
+  digest: Digest;                   // stored verbatim; saved/compare views re-show it
+  windows: SlimWindows;
+  durationMs: number;               // timeSplit.totalMs at save time
+}
+
+export interface SavedRun { id: string; name: string; createdAt: number; result: SlimResult; }
+
+export type DeltaDirection = 'up' | 'down' | 'flat';
+export type DeltaPolarity = 'improved' | 'worse' | 'neutral' | 'unknown';
+export type DeltaStat = 'avg' | 'max' | 'p1Low' | 'p5Low' | 'fired';
+
+export interface SensorDelta {
+  key: string;                      // CanonicalKey, FlagKey, or 'fps'
+  label: string;
+  unit: string | null;
+  stat: DeltaStat;
+  before: number | null;
+  after: number | null;
+  delta: number | null;             // after − before; null when either side is missing
+  direction: DeltaDirection;        // 'flat' when the change sits below the significance floor
+  polarity: DeltaPolarity;
+}
+
+export interface EventDiff { resolved: DiagEvent[]; introduced: DiagEvent[]; persisted: DiagEvent[]; }
+
+export type MismatchKind = 'cpu' | 'gpu' | 'fpsSource' | 'duration' | 'activityKind';
+export interface Mismatch { kind: MismatchKind; message: string; }
+
+export interface TimeSplitDelta { before: TimeSplit; after: TimeSplit; dominantChanged: boolean; }
+
+export interface Comparison {
+  before: SlimResult;
+  after: SlimResult;
+  heroDeltas: SensorDelta[];        // the 5 hero rows (Easy view)
+  sensorDeltas: SensorDelta[];      // full table: fps rows + per-sensor avg/max + flag counts
+  eventDiff: EventDiff;
+  mismatches: Mismatch[];
+  timeSplitDelta: TimeSplitDelta;
+  headline: string;
+  caveat: string;                   // fixed same-workload caveat, always present
+}
