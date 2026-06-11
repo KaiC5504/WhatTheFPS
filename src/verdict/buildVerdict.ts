@@ -5,6 +5,7 @@ import type {
 } from '../types';
 import { buildGuidance } from './guidance';
 import { lookupTempRange } from '../reference/tempRanges';
+import { statAvg, statMax } from '../stats/percentiles';
 
 const SEVERITY_RANK: Record<Severity, number> = { bad: 3, warn: 2, info: 1 };
 
@@ -24,20 +25,6 @@ function healthFromEvents(events: DiagEvent[]): Health {
 }
 
 const MOOD: Record<Health, MascotMood> = { bad: 'panic', warn: 'concerned', good: 'chill' };
-
-function maxOf(stats: Partial<Record<CanonicalKey, Stats>>, keys: CanonicalKey[]): number | null {
-  let m: number | null = null;
-  for (const k of keys) {
-    const s = stats[k];
-    if (s && s.count > 0) m = m === null ? s.max : Math.max(m, s.max);
-  }
-  return m;
-}
-
-function avgOf(stats: Partial<Record<CanonicalKey, Stats>>, key: CanonicalKey): number | null {
-  const s = stats[key];
-  return s && s.count > 0 ? s.avg : null;
-}
 
 function tempSeverity(value: number | null, warnAt: number, badAt: number): Severity {
   if (value === null) return 'info';
@@ -84,24 +71,24 @@ function buildHero(log: NormalizedLog, stats: Partial<Record<CanonicalKey, Stats
   };
 
   // CPU: package average headline (the standard "CPU temp"), all-core average as the sub.
-  const cpuPkgAvg = avgOf(stats, 'cpu.tempPackage');
-  const cpuCoreAvg = avgOf(stats, 'cpu.tempCoreAvg');
-  const cpuMain = cpuPkgAvg ?? cpuCoreAvg ?? avgOf(stats, 'cpu.tempCoreMax');
+  const cpuPkgAvg = statAvg(stats, 'cpu.tempPackage');
+  const cpuCoreAvg = statAvg(stats, 'cpu.tempCoreAvg');
+  const cpuMain = cpuPkgAvg ?? cpuCoreAvg ?? statAvg(stats, 'cpu.tempCoreMax');
   const cpuSub = cpuPkgAvg !== null && cpuCoreAvg !== null ? `cores ${Math.round(cpuCoreAvg)}°C` : null;
 
   // GPU: edge-temp average headline, hotspot peak as the sub.
-  const gpuHotPeak = maxOf(stats, ['gpu.hotspot']);
+  const gpuHotPeak = statMax(stats, ['gpu.hotspot']);
   const gpuSub = gpuHotPeak !== null ? `hotspot ${Math.round(gpuHotPeak)}°C` : null;
 
   const cpuRange = lookupTempRange('cpu', log.specs);
   const gpuRange = lookupTempRange('gpu', log.specs);
   return [
     fpsTile,
-    usageTile('cpu.usageTotal', 'CPU usage', avgOf(stats, 'cpu.usageTotal')),
-    tempTile('cpu.temp', 'CPU temp', cpuMain, maxOf(stats, ['cpu.tempPackage', 'cpu.tempCoreMax']), cpuSub,
+    usageTile('cpu.usageTotal', 'CPU usage', statAvg(stats, 'cpu.usageTotal')),
+    tempTile('cpu.temp', 'CPU temp', cpuMain, statMax(stats, ['cpu.tempPackage', 'cpu.tempCoreMax']), cpuSub,
       cpuRange.warnAt, cpuRange.badAt),
-    usageTile('gpu.usage', 'GPU usage', avgOf(stats, 'gpu.usage')),
-    tempTile('gpu.temp', 'GPU temp', avgOf(stats, 'gpu.temp'), maxOf(stats, ['gpu.temp']), gpuSub,
+    usageTile('gpu.usage', 'GPU usage', statAvg(stats, 'gpu.usage')),
+    tempTile('gpu.temp', 'GPU temp', statAvg(stats, 'gpu.temp'), statMax(stats, ['gpu.temp']), gpuSub,
       gpuRange.warnAt, gpuRange.badAt),
   ];
 }
@@ -145,19 +132,21 @@ const LIMITER_EVENT: Partial<Record<Limiter | 'mixed', string[]>> = {
   capped: ['fps-cap'],
 };
 
-function pickPrimaryFix(events: DiagEvent[], split: TimeSplit): Finding | null {
+function toFinding(e: DiagEvent): Finding {
+  const f: Finding = { severity: e.severity, text: e.sentence };
+  if (e.fix !== undefined) f.fix = e.fix;
+  if (e.evidence !== undefined) f.evidence = e.evidence;
+  return f;
+}
+
+function pickPrimaryFix(events: DiagEvent[], ranked: DiagEvent[], split: TimeSplit): Finding | null {
   const byType = (t: string) => events.find((e) => e.type === t);
   const ordered: (DiagEvent | undefined)[] = [
     ...FIX_PRIORITY.map(byType),
     ...(split.dominant !== null ? (LIMITER_EVENT[split.dominant] ?? []).map(byType) : []),
   ];
-  const ranked = [...events].sort((a, b) => SEVERITY_RANK[b.severity] - SEVERITY_RANK[a.severity]);
   const chosen = ordered.find((e) => e !== undefined) ?? ranked[0];
-  if (!chosen) return null;
-  const f: Finding = { severity: chosen.severity, text: chosen.sentence };
-  if (chosen.fix !== undefined) f.fix = chosen.fix;
-  if (chosen.evidence !== undefined) f.evidence = chosen.evidence;
-  return f;
+  return chosen ? toFinding(chosen) : null;
 }
 
 export function buildVerdict(
@@ -169,12 +158,7 @@ export function buildVerdict(
   const health = healthFromEvents(events);
   const ranked = sortedFindings(events);
 
-  const findings: Finding[] = ranked.slice(0, 4).map((e) => {
-    const f: Finding = { severity: e.severity, text: e.sentence };
-    if (e.fix !== undefined) f.fix = e.fix;
-    if (e.evidence !== undefined) f.evidence = e.evidence;
-    return f;
-  });
+  const findings: Finding[] = ranked.slice(0, 4).map(toFinding);
 
   const split = windows.timeSplit;
   const hasGameplay = split.gameplayMs > 0;
@@ -201,7 +185,7 @@ export function buildVerdict(
     findings,
     timeSplit: hasGameplay ? split : null,
     worst: windows.worst,
-    primaryFix: pickPrimaryFix(events, split),
+    primaryFix: pickPrimaryFix(events, ranked, split),
     coverage: hasGameplay ? { gameplayMs: split.gameplayMs, totalMs: split.totalMs } : null,
     guidance,
   };

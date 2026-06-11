@@ -1,5 +1,6 @@
 import type { CanonicalKey, DiagEvent, FlagKey, NormalizedLog, Stats, WindowAnalysis } from '../types';
 import { makeEvent } from './events';
+import { countTrue } from './shared';
 
 const SHARE_NOTABLE = 0.4;     // GPU-bound is the expected state; only narrate when dominant
 const FLAG_SUBSHARE = 0.3;     // fraction of gpu-bound windows where a limiter flag fired
@@ -18,7 +19,7 @@ export function causeGpuBound(
 
   if (gpuWindows.length > 0 && share >= SHARE_NOTABLE) {
     const subshare = (k: FlagKey) =>
-      gpuWindows.filter((w) => w.metrics.flagsFired.includes(k)).length / gpuWindows.length;
+      countTrue(gpuWindows.map((w) => w.metrics.flagsFired.includes(k))) / gpuWindows.length;
     const thermal = subshare('flag.gpu.perfLimitThermal');
     const power = subshare('flag.gpu.perfLimitPower');
     const voltage = Math.max(subshare('flag.gpu.perfLimitVRel'), subshare('flag.gpu.perfLimitVOp'));

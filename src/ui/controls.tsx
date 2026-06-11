@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
+import type { InputHTMLAttributes, ReactNode } from 'react';
 import { cx } from './cx';
 import './controls.css';
 
@@ -82,24 +82,5 @@ export function Checkbox({ label, className, ...rest }: CheckboxProps) {
       </span>
       {label != null && <span className="ctl-check__label">{label}</span>}
     </label>
-  );
-}
-
-interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
-  children: ReactNode;
-}
-
-// Themed dropdown: a native <select> (full keyboard + native option list intact) with
-// the system chrome stripped and a control-room chevron overlaid.
-export function Select({ className, children, ...rest }: SelectProps) {
-  return (
-    <span className={cx('ctl-select', className)}>
-      <select className="ctl-select__el" {...rest}>
-        {children}
-      </select>
-      <span className="ctl-select__chevron" aria-hidden="true">
-        {ChevronDown}
-      </span>
-    </span>
   );
 }

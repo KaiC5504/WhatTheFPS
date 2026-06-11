@@ -3,6 +3,7 @@ import type {
   FlagKey, FpsSource, Mismatch, SensorDelta, SlimResult, Stats,
 } from '../types';
 import { FLAG_LABELS } from '../windows/snapshot';
+import { statAvg, statMax } from '../stats/percentiles';
 
 // Lower-is-better keys. Everything not listed here (and not FPS) is neutral: usages,
 // clocks, voltages, fans, VRAM MB, PresentMon busy/wait, power limits — a shift there
@@ -51,8 +52,7 @@ function fpsStat(r: SlimResult, pick: (s: Stats) => number): number | null {
 }
 
 function avgOf(stats: SlimResult['stats'], key: CanonicalKey): number | null {
-  const s = stats[key];
-  return s && s.count > 0 ? s.avg : null;
+  return statAvg(stats, key);
 }
 
 // Same fallback chain as buildVerdict's CPU hero tile: package, then all-core avg,
@@ -92,8 +92,7 @@ export function buildHeroDeltas(before: SlimResult, after: SlimResult): SensorDe
 }
 
 function statOf(r: SlimResult, key: CanonicalKey, stat: 'avg' | 'max'): number | null {
-  const s = r.stats[key];
-  return s && s.count > 0 ? s[stat] : null;
+  return stat === 'avg' ? statAvg(r.stats, key) : statMax(r.stats, [key]);
 }
 
 export function buildSensorDeltas(before: SlimResult, after: SlimResult): SensorDelta[] {

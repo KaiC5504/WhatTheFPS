@@ -1,15 +1,13 @@
 /* Themed form controls — same dark instrument surface and single blue accent as the
-   rest of the app, replacing the OS-default number spinner, checkbox and dropdown. */
+   rest of the app, replacing the OS-default number spinner and checkbox. */
 
-.ctl-num,
-.ctl-select {
+.ctl-num {
   position: relative;
   display: flex;
   width: 100%;
 }
 
-.ctl-num__input,
-.ctl-select__el {
+.ctl-num__input {
   width: 100%;
   background: var(--inset);
   border: 1px solid var(--border);
@@ -17,13 +15,12 @@
   padding: var(--s2) var(--s3);
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: var(--text-sm);
   line-height: 1.4;
   outline: none;
   transition: border-color var(--dur-fast) var(--ease);
 }
-.ctl-num__input:focus,
-.ctl-select__el:focus {
+.ctl-num__input:focus {
   border-color: var(--accent);
 }
 
@@ -141,33 +138,6 @@
 }
 .ctl-check__label {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: var(--text-sm);
   color: var(--text);
-}
-
-/* ---- select ---------------------------------------------------------- */
-
-.ctl-select__el {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  padding-right: 34px;
-  cursor: pointer;
-}
-.ctl-select__el option {
-  background: var(--surface-2);
-  color: var(--text);
-}
-.ctl-select__chevron {
-  position: absolute;
-  right: var(--s3);
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  color: var(--text-dim);
-  pointer-events: none;
-  transition: color var(--dur-fast) var(--ease);
-}
-.ctl-select__el:focus ~ .ctl-select__chevron {
-  color: var(--accent);
 }

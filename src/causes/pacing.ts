@@ -1,12 +1,12 @@
 import type { WindowAnalysis, WindowClassification } from '../types';
-import { computeStats } from '../stats/percentiles';
+import { computeStats, medianLower } from '../stats/percentiles';
 
 export interface SpikeCluster { startRow: number; endRow: number; peakMs: number; }
 
 // Below this many gameplay samples, pacing percentiles are noise — every function
 // in this module goes silent rather than guessing.
 const MIN_SAMPLES = 20;
-const SPIKE_FACTOR = 2;  // a sample 2× the gameplay median counts as a spike
+const PACING_SPIKE_FACTOR = 2;  // a sample 2× the gameplay median counts as a spike
 const MIN_RUN = 2;       // ≥2 consecutive spiked polls = a cluster, not a one-poll artefact
 // A poll averaging over 100 ms (<10 FPS) is a freeze/load/scene-cut, not micro-stutter.
 // Benchmarks (e.g. Superposition) cycle through scenes with multi-second load stalls that
@@ -45,13 +45,13 @@ export function stutterIndex(series: (number | null)[], rows: Set<number>): numb
 
 export function gameplayMedian(series: (number | null)[], rows: Set<number>): number | null {
   const vals = inPlay(series, rows).sort((a, b) => a - b);
-  return vals.length >= MIN_SAMPLES ? vals[Math.floor(vals.length / 2)] : null;
+  return vals.length >= MIN_SAMPLES ? medianLower(vals) : null;
 }
 
 export function spikeRows(series: (number | null)[], rows: Set<number>): number[] {
   const median = gameplayMedian(series, rows);
   if (median === null || median <= 0) return [];
-  const threshold = SPIKE_FACTOR * median;
+  const threshold = PACING_SPIKE_FACTOR * median;
   const out: number[] = [];
   for (let i = 0; i < series.length; i++) {
     const v = series[i];

@@ -87,7 +87,10 @@ export function Timeline({ result, selection, onSelect, onClear }: TimelineProps
     const xs = rows.map((r) => ((log.timesMs[r] ?? t0) - t0) / 1000);
     const ys: (number | null)[][] = [];
     const series: uPlot.Series[] = [{}];
-    const axisFont = `11px ${theme.fontMono}`;
+    // uPlot paints axis text into a canvas where CSS vars don't resolve, so read
+    // the token's computed value off the mounted element (same trick as chartTheme).
+    const axisSize = getComputedStyle(el).getPropertyValue('--text-xs').trim() || '11px';
+    const axisFont = `${axisSize} ${theme.fontMono}`;
     const axes: uPlot.Axis[] = [{
       stroke: theme.textDim,
       font: axisFont,

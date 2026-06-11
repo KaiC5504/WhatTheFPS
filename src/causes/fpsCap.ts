@@ -1,18 +1,11 @@
-import type { NormalizedLog, CanonicalKey, FlagKey, Stats, DiagEvent, WindowAnalysis } from '../types';
+import type { NormalizedLog, CanonicalKey, Stats, DiagEvent, WindowAnalysis } from '../types';
 import { makeEvent } from './events';
+import { flagDensity } from './shared';
 
 const HEADROOM_FIX =
   'Try undervolting the GPU or lowering its power limit — at a capped framerate this runs cooler and quieter for free.';
 
 const GPU_PINNED_PCT = 95;
-
-function flagDensity(log: NormalizedLog, key: FlagKey): number {
-  const flag = log.flags[key];
-  if (!flag || flag.values.length === 0) return 0;
-  let n = 0;
-  for (const v of flag.values) if (v) n++;
-  return n / flag.values.length;
-}
 
 export function causeFpsCap(
   log: NormalizedLog,

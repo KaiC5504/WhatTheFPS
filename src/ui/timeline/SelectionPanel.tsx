@@ -1,16 +1,9 @@
 import type { AnalysisResult, Limiter, SelectionAnalysis } from '../../types';
 import { Button, Card } from '../primitives';
 import { fmtMmSs } from './Timeline';
+import { LIMITER_LABEL } from '../limiterLabel';
+import { n, unitSuffix } from '../numFormat';
 import './SelectionPanel.css';
-
-const LIMITER_LABEL: Record<Limiter, string> = {
-  gpu: 'GPU-bound', cpu: 'CPU-bound', capped: 'capped', underutilized: 'GPU underutilized',
-  ambiguous: 'unclear', unknown: 'unclassified',
-};
-
-function n(x: number): string {
-  return Number.isInteger(x) ? String(x) : x.toFixed(1);
-}
 
 interface SelectionPanelProps {
   result: AnalysisResult;
@@ -62,7 +55,7 @@ export function SelectionPanel({ result, selection, onClear }: SelectionPanelPro
           </thead>
           <tbody>
             {sensorRows.map(({ sensor, stats }) => {
-              const u = sensor.unit ? (sensor.unit === '%' ? '%' : ` ${sensor.unit}`) : '';
+              const u = unitSuffix(sensor.unit);
               return (
                 <tr key={sensor.key}>
                   <th className="nerd-table__name" scope="row">{sensor.label}</th>

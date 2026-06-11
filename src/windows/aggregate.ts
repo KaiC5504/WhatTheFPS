@@ -1,5 +1,6 @@
 import type { Limiter, TimeSplit, TimeWindow, WindowClassification, WorstMoment } from '../types';
 import { buildSnapshot } from './snapshot';
+import { medianLower } from '../stats/percentiles';
 
 const DOMINANT_SHARE = 0.4;
 const WORST_COUNT = 3;
@@ -36,7 +37,7 @@ export function pickWorst(classified: WindowClassification[]): WorstMoment[] {
   const withFps = gameplay.filter((c) => c.metrics.fpsAvg !== null);
 
   const fpsSorted = withFps.map((c) => c.metrics.fpsAvg as number).sort((a, b) => a - b);
-  const median = fpsSorted.length ? fpsSorted[Math.floor(fpsSorted.length / 2)] : null;
+  const median = fpsSorted.length ? medianLower(fpsSorted) : null;
 
   const pool = withFps.length > 0
     ? [...withFps].sort((a, b) => (a.metrics.fpsAvg as number) - (b.metrics.fpsAvg as number))

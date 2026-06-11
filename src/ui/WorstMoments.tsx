@@ -1,12 +1,8 @@
 import type { WorstMoment } from '../types';
 import { Card } from './primitives';
 import { EvidenceBadge } from './EvidenceBadge';
+import { LIMITER_LABEL } from './limiterLabel';
 import './WorstMoments.css';
-
-const LIMITER_LABEL: Record<string, string> = {
-  gpu: 'GPU-bound', cpu: 'CPU-bound', capped: 'capped', underutilized: 'GPU underutilized',
-  ambiguous: 'unclear', unknown: 'unclassified',
-};
 
 function offsetLabel(startMs: number, baseMs: number): string {
   const off = Math.max(0, startMs - baseMs);

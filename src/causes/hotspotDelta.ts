@@ -1,16 +1,9 @@
 import type { NormalizedLog, CanonicalKey, FlagKey, Stats, DiagEvent, WindowAnalysis } from '../types';
 import { makeEvent } from './events';
+import { countTrue, flagDensity } from './shared';
 
 const HOTSPOT_DELTA_C = 15;
 const POWER_LIMIT_DENSITY = 0.2;
-
-function density(log: NormalizedLog, key: FlagKey): number | null {
-  const flag = log.flags[key];
-  if (!flag || flag.values.length === 0) return null;
-  let n = 0;
-  for (const v of flag.values) if (v) n++;
-  return n / flag.values.length;
-}
 
 function meanDelta(a: (number | null)[], b: (number | null)[]): number | null {
   let sum = 0;
@@ -38,11 +31,11 @@ export function causeHotspotDelta(
     { key: 'flag.gpu.perfLimitPower', label: 'GPU' },
   ];
   for (const { key, label } of powerChecks) {
-    const d = density(log, key);
-    if (d === null || d < POWER_LIMIT_DENSITY) continue;
+    const d = flagDensity(log, key);
+    if (d < POWER_LIMIT_DENSITY) continue;
     const pct = Math.round(d * 100);
     const flag = log.flags[key]!;
-    const count = flag.values.filter((v) => v).length;
+    const count = countTrue(flag.values);
     events.push(makeEvent({
       type: 'power-limit',
       severity: d >= 0.5 ? 'warn' : 'info',

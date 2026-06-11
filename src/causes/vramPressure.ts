@@ -1,10 +1,11 @@
 import type { CanonicalKey, DiagEvent, NormalizedLog, Stats, WindowAnalysis, WindowClassification } from '../types';
 import { makeEvent } from './events';
+import { medianLower } from '../stats/percentiles';
 
 const CAPACITY_NEAR_FRAC = 0.9;
 const NEAR_FULL_FRAC = 0.95;
 const SPILL_RISE_MB = 200;
-const SPIKE_FACTOR = 2.5;
+const VRAM_FT_SPIKE_FACTOR = 2.5;
 const SPIKE_MIN_WINDOWS = 2;
 
 function vramCapacityMb(log: NormalizedLog): number | null {
@@ -33,8 +34,8 @@ function spikeWindows(wa: WindowAnalysis): WindowClassification[] {
   const gameplay = wa.windows.filter((w) => w.activity === 'gameplay' && w.metrics.frameTimeMs !== null);
   if (gameplay.length === 0) return [];
   const fts = gameplay.map((w) => w.metrics.frameTimeMs as number).sort((a, b) => a - b);
-  const median = fts[Math.floor(fts.length / 2)];
-  return gameplay.filter((w) => w.metrics.frameTimeMaxMs !== null && w.metrics.frameTimeMaxMs >= SPIKE_FACTOR * median);
+  const median = medianLower(fts);
+  return gameplay.filter((w) => w.metrics.frameTimeMaxMs !== null && w.metrics.frameTimeMaxMs >= VRAM_FT_SPIKE_FACTOR * median);
 }
 
 export function causeVramPressure(
@@ -64,7 +65,7 @@ export function causeVramPressure(
         basis: [
           `D3D dedicated p95 ${Math.round(dedicated.p95)} MB of ${capacity} MB capacity`,
           `dynamic (spilled) VRAM rose ≥ ${SPILL_RISE_MB} MB over the session`,
-          `${spikes.length} windows with frametime spikes ≥ ${SPIKE_FACTOR}× the median`,
+          `${spikes.length} windows with frametime spikes ≥ ${VRAM_FT_SPIKE_FACTOR}× the median`,
         ],
       },
       windowIndexes: spikes.map((w) => w.window.index),

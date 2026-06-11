@@ -1,6 +1,8 @@
 import type { CanonicalKey, DiagEvent, FlagKey, NormalizedLog, Severity, Stats, WindowAnalysis, WindowClassification } from '../types';
 import { makeEvent } from './events';
+import { countTrue } from './shared';
 import { linearTrend } from '../stats/trend';
+import { statMax } from '../stats/percentiles';
 
 const THROTTLE_FIX = 'Improve cooling, lower the power limit, or undervolt to keep clocks up.';
 
@@ -23,21 +25,6 @@ const CPU_FLAGS: FlagCheck[] = [
   { key: 'flag.cpu.prochot', label: 'PROCHOT (overheat protection)' },
   { key: 'flag.cpu.ratl', label: 'RATL (running-average thermal limit)' },
 ];
-
-function countTrue(values: boolean[]): number {
-  let n = 0;
-  for (const v of values) if (v) n++;
-  return n;
-}
-
-function peakTemp(stats: Partial<Record<CanonicalKey, Stats>>, keys: CanonicalKey[]): number | null {
-  let peak: number | null = null;
-  for (const k of keys) {
-    const s = stats[k];
-    if (s && s.count > 0) peak = peak === null ? s.max : Math.max(peak, s.max);
-  }
-  return peak;
-}
 
 function flagEvent(
   hardwareLabel: string,
@@ -170,7 +157,7 @@ export function causeThermalCollapse(
 ): DiagEvent[] {
   const events: DiagEvent[] = [];
 
-  const cpuPeak = peakTemp(stats, ['cpu.tempCoreMax', 'cpu.tempPackage']);
+  const cpuPeak = statMax(stats, ['cpu.tempCoreMax', 'cpu.tempPackage']);
   for (const fc of CPU_FLAGS) {
     const flag = log.flags[fc.key];
     if (!flag) continue;

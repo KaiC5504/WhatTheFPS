@@ -21,7 +21,7 @@
 
 .hero-stats .stat-tile__status {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.05em;
   color: var(--text-mute);

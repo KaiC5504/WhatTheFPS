@@ -5,6 +5,7 @@ import type {
 } from '../types';
 import { FLAG_LABELS } from '../windows/snapshot';
 import { lookupTempRange } from '../reference/tempRanges';
+import { majorityTier } from '../causes/shared';
 
 const DEFAULT_GOAL = 'help me lower temps without losing FPS';
 
@@ -148,7 +149,7 @@ function timeSplitLine(wa: WindowAnalysis): string | null {
     .map(([k, v]) => {
       const ws = wa.windows.filter((w) => w.activity === 'gameplay' && w.limiter === k);
       // majority rule: tag measured only when ≥50% of this limiter's windows have measured-tier coverage
-      const measured = ws.length > 0 && ws.filter((w) => w.tier === 'measured').length * 2 >= ws.length;
+      const measured = ws.length > 0 && majorityTier(ws) === 'measured';
       const tag = ws.some((w) => w.tier !== null) ? ` ${TIER_TAG[measured ? 'measured' : 'inferred']}` : '';
       return `${LIMITER_LABEL[k]} ${Math.round(v * 100)}%${tag}`;
     });

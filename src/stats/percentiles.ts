@@ -1,4 +1,4 @@
-import type { Stats } from '../types';
+import type { CanonicalKey, Stats } from '../types';
 
 // Linear interpolation between closest ranks on a 0..(n-1) index basis
 // (numpy 'linear' / Excel PERCENTILE.INC).
@@ -19,6 +19,26 @@ function lowTailMean(sorted: number[], fraction: number): number {
   let sum = 0;
   for (let i = 0; i < k; i++) sum += sorted[i];
   return sum / k;
+}
+
+// Detector-convention median: sorted[floor(n/2)], picking one element instead of
+// averaging the two middles (the true-median convention lives in sensors/normalize).
+export function medianLower(sorted: number[]): number {
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+export function statMax(stats: Partial<Record<CanonicalKey, Stats>>, keys: CanonicalKey[]): number | null {
+  let m: number | null = null;
+  for (const k of keys) {
+    const s = stats[k];
+    if (s && s.count > 0) m = m === null ? s.max : Math.max(m, s.max);
+  }
+  return m;
+}
+
+export function statAvg(stats: Partial<Record<CanonicalKey, Stats>>, key: CanonicalKey): number | null {
+  const s = stats[key];
+  return s && s.count > 0 ? s.avg : null;
 }
 
 export function computeStats(values: (number | null)[]): Stats {

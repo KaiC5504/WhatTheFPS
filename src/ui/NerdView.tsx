@@ -6,11 +6,8 @@ import { Timeline } from './timeline/Timeline';
 import { SelectionPanel } from './timeline/SelectionPanel';
 import { WorstMoments } from './WorstMoments';
 import { CoreGrid } from './CoreGrid';
+import { n, unitSuffix } from './numFormat';
 import './NerdView.css';
-
-function n(x: number): string {
-  return Number.isInteger(x) ? String(x) : x.toFixed(1);
-}
 
 // Stable display order; only keys actually present (count > 0) get a row.
 const SENSOR_ORDER: CanonicalKey[] = [
@@ -56,7 +53,7 @@ function SensorTable({ result }: { result: AnalysisResult }) {
           </thead>
           <tbody>
             {rows.map(({ key, stats, sensor }) => {
-              const u = sensor.unit ? (sensor.unit === '%' ? '%' : ` ${sensor.unit}`) : '';
+              const u = unitSuffix(sensor.unit);
               return (
                 <tr key={key}>
                   <th className="nerd-table__name" scope="row">{sensor.label}</th>
