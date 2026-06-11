@@ -36,4 +36,11 @@ describe('makeEvent', () => {
     expect(e.evidence?.tier).toBe('measured');
     expect(e.windowIndexes).toEqual([3, 4]);
   });
+
+  it('forwards subtype when given and omits the key otherwise', () => {
+    const tagged = makeEvent({ type: 'throttling', subtype: 'gpu-thermal', severity: 'warn', sentence: 'x', sampleCount: 1 });
+    expect(tagged.subtype).toBe('gpu-thermal');
+    const bare = makeEvent({ type: 'throttling', severity: 'warn', sentence: 'x', sampleCount: 1 });
+    expect('subtype' in bare).toBe(false);
+  });
 });

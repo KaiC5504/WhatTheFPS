@@ -131,3 +131,24 @@ describe('causeThermalCollapse — GPU thermal-limit (perf-cap reason)', () => {
     expect(e.severity).toBe('info');
   });
 });
+
+describe('causeThermalCollapse — compare subtypes', () => {
+  it('tags CPU flag events cpu-thermal and the GPU limit event gpu-thermal', () => {
+    const log = makeLog({
+      flags: {
+        'flag.cpu.thermalThrottle': [false, true, true],
+        'flag.gpu.perfLimitThermal': [true, true, false],   // 67% density → fires
+      },
+      sensors: { 'cpu.tempCoreMax': [80, 99, 100], 'gpu.temp': [70, 86, 84] },
+    });
+    const wa = makeWindowAnalysis([makeWindow(0)]);
+    const events = causeThermalCollapse(log, {}, wa);
+    expect(events.find((e) => e.sentence.startsWith('CPU'))?.subtype).toBe('cpu-thermal');
+    expect(events.find((e) => e.sentence.startsWith('GPU'))?.subtype).toBe('gpu-thermal');
+  });
+
+  it('tags the heat-soak collapse with the sagging side', () => {
+    const e = causeThermalCollapse(makeLog({}), {}, collapsingWa()).find((x) => x.type === 'thermal-collapse')!;
+    expect(e.subtype).toBe('gpu-thermal');
+  });
+});

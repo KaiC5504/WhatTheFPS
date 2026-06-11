@@ -12,6 +12,7 @@ function slug(s: string): string {
 
 export function makeEvent(input: {
   type: string;
+  subtype?: string;
   severity: Severity;
   sentence: string;
   fix?: string;
@@ -26,6 +27,7 @@ export function makeEvent(input: {
     sentence: input.sentence,
     sampleCount: input.sampleCount,
   };
+  if (input.subtype !== undefined) event.subtype = input.subtype;
   if (input.fix !== undefined) event.fix = input.fix;
   if (input.evidence !== undefined) event.evidence = input.evidence;
   if (input.windowIndexes !== undefined) event.windowIndexes = input.windowIndexes;

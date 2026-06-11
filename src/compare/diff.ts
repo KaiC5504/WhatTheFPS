@@ -1,5 +1,6 @@
 import type {
-  CanonicalKey, DeltaPolarity, DeltaStat, FlagKey, SensorDelta, SlimResult, Stats,
+  CanonicalKey, Comparison, DeltaPolarity, DeltaStat, DiagEvent, EventDiff,
+  FlagKey, FpsSource, Mismatch, SensorDelta, SlimResult, Stats,
 } from '../types';
 import { FLAG_LABELS } from '../windows/snapshot';
 
@@ -132,4 +133,118 @@ export function buildSensorDeltas(before: SlimResult, after: SlimResult): Sensor
     }));
   }
   return out;
+}
+
+export const WORKLOAD_CAVEAT =
+  'HWiNFO logs carry no game or scene identity — confirm both runs were the same workload.';
+
+const eventKey = (e: DiagEvent) => `${e.type}:${e.subtype ?? ''}`;
+
+function uniqueByKey(events: DiagEvent[]): DiagEvent[] {
+  const seen = new Set<string>();
+  return events.filter((e) => {
+    const k = eventKey(e);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+function buildEventDiff(before: DiagEvent[], after: DiagEvent[]): EventDiff {
+  const beforeKeys = new Set(before.map(eventKey));
+  const afterKeys = new Set(after.map(eventKey));
+  return {
+    resolved: uniqueByKey(before).filter((e) => !afterKeys.has(eventKey(e))),
+    introduced: uniqueByKey(after).filter((e) => !beforeKeys.has(eventKey(e))),
+    persisted: uniqueByKey(after).filter((e) => beforeKeys.has(eventKey(e))),
+  };
+}
+
+const FPS_SOURCE_LABEL: Record<FpsSource, string> = {
+  displayed: 'PresentMon displayed',
+  presented: 'PresentMon presented',
+  legacy: 'legacy framerate counter',
+  none: 'no framerate logged',
+};
+
+const mins = (ms: number) => (ms / 60_000).toFixed(1);
+
+function buildMismatches(before: SlimResult, after: SlimResult): Mismatch[] {
+  const out: Mismatch[] = [];
+  const b = before.log.specs;
+  const a = after.log.specs;
+  if (b.cpuModelGuess !== null && a.cpuModelGuess !== null && b.cpuModelGuess !== a.cpuModelGuess) {
+    out.push({ kind: 'cpu', message: `Different CPUs: ${b.cpuModelGuess} vs ${a.cpuModelGuess}.` });
+  }
+  if (b.gpuModelGuess !== null && a.gpuModelGuess !== null && b.gpuModelGuess !== a.gpuModelGuess) {
+    out.push({ kind: 'gpu', message: `Different GPUs: ${b.gpuModelGuess} vs ${a.gpuModelGuess}.` });
+  }
+  if (before.log.fps.source !== after.log.fps.source) {
+    out.push({
+      kind: 'fpsSource',
+      message: `FPS sources differ: ${FPS_SOURCE_LABEL[before.log.fps.source]} vs ${FPS_SOURCE_LABEL[after.log.fps.source]} — FPS deltas may not be apples-to-apples.`,
+    });
+  }
+  const bMs = before.windows.timeSplit.totalMs;
+  const aMs = after.windows.timeSplit.totalMs;
+  if (bMs > 0 && aMs > 0 && Math.max(bMs, aMs) / Math.min(bMs, aMs) > 1.5) {
+    out.push({
+      kind: 'duration',
+      message: `Run lengths differ a lot: ${mins(bMs)} vs ${mins(aMs)} min — percentiles aren't directly comparable.`,
+    });
+  }
+  if (before.windows.activityKind !== after.windows.activityKind) {
+    out.push({
+      kind: 'activityKind',
+      message: 'One run is gameplay and the other a no-FPS workload (benchmark) — most deltas are meaningless across that divide.',
+    });
+  }
+  return out;
+}
+
+function buildHeadline(heroDeltas: SensorDelta[], eventDiff: EventDiff): string {
+  const parts: string[] = [];
+
+  const fps = heroDeltas.find((d) => d.key === 'fps');
+  if (fps && fps.delta !== null && fps.direction !== 'flat' && fps.before !== null && fps.before > 0) {
+    const pct = Math.round((Math.abs(fps.delta) / fps.before) * 100);
+    parts.push(`Average FPS ${fps.direction === 'up' ? 'went up' : 'dropped'} ${pct}% (${Math.round(fps.before)} → ${Math.round(fps.after as number)}).`);
+  }
+
+  // one temperature sentence is enough for a headline; GPU outranks CPU
+  for (const key of ['gpu.temp', 'cpu.temp']) {
+    const t = heroDeltas.find((d) => d.key === key);
+    if (t && t.delta !== null && t.direction !== 'flat') {
+      parts.push(`${key === 'gpu.temp' ? 'GPU' : 'CPU'} ran ${Math.round(Math.abs(t.delta))}°C ${t.delta < 0 ? 'cooler' : 'hotter'}.`);
+      break;
+    }
+  }
+
+  const { resolved, introduced } = eventDiff;
+  if (resolved.length > 0) parts.push(resolved.length === 1 ? 'One earlier issue cleared.' : `${resolved.length} earlier issues cleared.`);
+  if (introduced.length > 0) parts.push(introduced.length === 1 ? 'One new issue appeared.' : `${introduced.length} new issues appeared.`);
+
+  if (parts.length === 0) return 'Essentially unchanged — no meaningful difference between these runs.';
+  if (fps && fps.before !== null && fps.after !== null && fps.direction === 'flat') parts.unshift('FPS held steady.');
+  return parts.slice(0, 3).join(' ');
+}
+
+export function compareRuns(before: SlimResult, after: SlimResult): Comparison {
+  const heroDeltas = buildHeroDeltas(before, after);
+  const eventDiff = buildEventDiff(before.events, after.events);
+  return {
+    before,
+    after,
+    heroDeltas,
+    sensorDeltas: buildSensorDeltas(before, after),
+    eventDiff,
+    mismatches: buildMismatches(before, after),
+    timeSplitDelta: {
+      before: before.windows.timeSplit,
+      after: after.windows.timeSplit,
+      dominantChanged: before.windows.timeSplit.dominant !== after.windows.timeSplit.dominant,
+    },
+    headline: buildHeadline(heroDeltas, eventDiff),
+    caveat: WORKLOAD_CAVEAT,
+  };
 }
