@@ -135,6 +135,23 @@ describe('buildDigest', () => {
     expect(d.full).toMatch(/CPU VRM temp \(worst rail\)/);
     expect(d.compact).not.toMatch(/Drive temp/);
   });
+
+  it('full digest carries one class-level typical-range line; compact stays lean', () => {
+    const d = buildDigest(sampleResult());
+    expect(d.full).toContain('Typical for this class of hardware:');
+    expect(d.full).toMatch(/CPU load temps under \d+ °C are typical/);
+    expect(d.full).toMatch(/GPU edge under \d+ °C is typical/);
+    expect(d.compact).not.toContain('Typical for this class of hardware:');
+  });
+
+  it('omits the typical-range line when no temperature was logged', () => {
+    const base = sampleResult();
+    const stats = { ...base.stats };
+    delete stats['cpu.tempPackage'];
+    delete stats['gpu.temp'];
+    const d = buildDigest({ ...base, stats });
+    expect(d.full).not.toContain('Typical for this class of hardware:');
+  });
 });
 
 describe('evidence blocks', () => {
