@@ -56,6 +56,15 @@ describe('RunsPanel', () => {
     expect(h.onRename).toHaveBeenCalledWith('r1', 'Undervolt -75');
   });
 
+  it('the edited row’s Rename button is disabled so re-clicking can’t discard the draft', () => {
+    setup();
+    const renames = screen.getAllByRole('button', { name: 'Rename' });
+    fireEvent.click(renames[0]);   // first row = r1, now in edit mode
+    // the input occupies r1's name slot; r1's Rename stays in the DOM but disabled
+    const r1Rename = screen.getAllByRole('button', { name: 'Rename' })[0];
+    expect(r1Rename).toBeDisabled();
+  });
+
   it('delete and clear-all fire their callbacks', () => {
     const h = setup();
     fireEvent.click(screen.getAllByRole('button', { name: 'Delete' })[1]);   // second row = r2

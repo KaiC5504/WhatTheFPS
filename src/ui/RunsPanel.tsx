@@ -83,7 +83,11 @@ export function RunsPanel(props: RunsPanelProps): JSX.Element {
                     <span className="runs-panel__meta mono u-dim">{fmtTimestamp(run.createdAt)}</span>
                   </button>
                 )}
-                <Button variant="subtle" onClick={() => { setEditingId(run.id); setDraft(run.name); }}>Rename</Button>
+                <Button
+                  variant="subtle"
+                  disabled={editingId === run.id}
+                  onClick={() => { setEditingId(run.id); setDraft(run.name); }}
+                >Rename</Button>
                 <Button variant="subtle" onClick={() => props.onDelete(run.id)}>Delete</Button>
               </li>
             ))}

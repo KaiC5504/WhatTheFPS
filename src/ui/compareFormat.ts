@@ -1,7 +1,7 @@
 import type { DeltaDirection, SensorDelta } from '../types';
 
 export function fmtSide(v: number | null, unit: string | null): string {
-  if (v === null) return '—';
+  if (v === null || !Number.isFinite(v)) return '—';
   const rounded = Math.abs(v) >= 100 ? Math.round(v) : Math.round(v * 10) / 10;
   const text = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
   if (unit === null) return text;
@@ -9,7 +9,7 @@ export function fmtSide(v: number | null, unit: string | null): string {
 }
 
 export function fmtDelta(d: SensorDelta): string {
-  if (d.delta === null) return '—';
+  if (d.delta === null || !Number.isFinite(d.delta)) return '—';
   return `${d.delta >= 0 ? '+' : '-'}${fmtSide(Math.abs(d.delta), d.unit)}`;
 }
 
