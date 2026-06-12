@@ -1,6 +1,7 @@
 {
   "name": "wtfps",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
